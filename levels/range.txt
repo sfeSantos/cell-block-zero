@@ -1,0 +1,36 @@
+; Cell Block Zero level file
+; tiles: # stone  = brick  % cell wall  & metal  ~ rock  * poster
+; doors: | steel  + bars  r/b/y locked  X exit switch
+; start: N S W E   guards: 1 2 3
+; pickups: u uzi  l launcher  g grenades  f flashes  a bullets  A ammo box
+;          o rockets  v vest  V riot vest  m medkit  h food  s silencer
+;          R/B/Y keys
+; scenery: k chained skeleton  n hanged man  d dead prisoner
+;          c remains and blood   p a prisoner who is still alive
+; guards:  4 dog   z guard asleep in a chair   Z sergeant asleep
+; weapons: K throwing knife, three throws in it
+;          T leg trap, set it on the floor with B
+
+name = Shooting range
+brief = No guards, only targets. They stand still, they say what each hit took off them, and they come back a couple of seconds after they drop. Markers down the sides are five tiles apart.
+dummies = true
+respawn = true
+readout = true
+ceiling = 0.13,0.14,0.16
+floor = 0.20,0.20,0.22
+
+[map]
+######################################################
+#..........*....=....*....=....*....=....*....=......#
+#..........&....&....&....&....&....&....&....&......#
+#.u.l.g.f............................................#
+#.a.A.o.s...........................333..............#
+#....................................................#
+#.E........1.........2.........3.........1....2......#
+#....................................................#
+#.v.V.m.h............................................#
+#.A.o.A.o............................................#
+#..........&....&....&....&....&....&....&....&......#
+#..........*....=....*....=....*....=....*....=......#
+######################################################
+[end]

@@ -1,0 +1,6 @@
+# the packed game, built from this folder
+*.love
+
+# whatever the editor leaves behind
+*.swp
+.DS_Store

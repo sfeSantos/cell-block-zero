@@ -1,0 +1,689 @@
+==============================================================================
+CELL BLOCK ZERO
+A prison break in the shape of the first Wolfenstein 3D, for LOVE 11.x
+==============================================================================
+
+Everything the game does, in one file. The README covers the same ground in
+shorter form; this is the long version, written to be read while playing.
+
+
+------------------------------------------------------------------------------
+1. RUNNING IT
+------------------------------------------------------------------------------
+
+  love .
+
+from the game folder. To pack it into one file:
+
+  zip -9 -r cellblockzero.love . -x '*.git*'
+  love cellblockzero.love
+
+It needs nothing else. There are no image or sound files: the wall textures
+are written pixel by pixel at startup, the guards, the pickups and the weapon
+in your hands are drawn into a canvas, and every sound is synthesised.
+
+The window opens fullscreen at the desktop resolution. F11 switches to a
+window and back.
+
+ON WINDOWS, install LOVE 11.5 from love2d.org, the 64 bit installer. Lua
+itself is not needed, LOVE carries its own. Then either drag this folder onto
+love.exe, or run it from a command prompt:
+
+  "C:\Program Files\LOVE\love.exe" C:\Users\you\CellBlockZero
+
+For a single file to double click, zip the contents of the folder, not the
+folder itself, and rename the zip to cellblockzero.love. From PowerShell,
+inside the folder:
+
+  Compress-Archive -Path * -DestinationPath cellblockzero.zip
+  Rename-Item cellblockzero.zip cellblockzero.love
+
+Settings and the blocks you have opened live in
+%APPDATA%\LOVE\prison-break-fps\progress.txt. Delete that file and
+everything goes back to the way it comes out of the box.
+
+
+------------------------------------------------------------------------------
+2. CONTROLS
+------------------------------------------------------------------------------
+
+  Walk forward and back       W and S, or the up and down arrows
+  Step sideways               A and D
+  Turn                        the mouse, the left and right arrows, Q and E,
+                              or hold alt with A and D
+  Run                         shift
+  Fire, or execute            left mouse button, or ctrl
+  Open a door, use the exit   space
+  Free a prisoner             space, standing in front of him
+  Pick a weapon               1 to 7, or the mouse wheel
+  Throw a grenade             G, or the right mouse button
+  Throw a flash grenade       F
+  Throw a knife               R, without putting your gun away
+  Set a leg trap              B, on the floor in front of you
+  Silencer on and off         T, or the middle mouse button
+  Mouse speed                 [ and ]
+  Map on and off              tab
+  Look up and down            mouse, page up and page down, home to centre
+  Pause                       P
+  Controls on screen          F1
+  Developer console           F2, or the tilde key
+  Cheats                      F3 god, F4 invisible, F5 endless ammunition
+  Mouse diagnostics           F6
+  Fullscreen                  F11
+  Back to the menu            escape
+
+The pointer belongs to the game while a block is being played and comes back
+when you pause, open the menu, open the console or leave the window.
+
+WASD and the mouse split the work the way the games you already play do it:
+A and D step sideways without changing where you face, and turning belongs to
+the mouse. The keyboard still has a full set of turn keys for anyone playing
+without a mouse, on the arrows, on Q and E, and on A and D while alt is held.
+
+When a turn key and the mouse are used at the same time, the mouse has the
+last word: while it is aiming, the turn keys stand down, and they take over
+again a moment after the hand stops.
+
+The menu works with the mouse as well as the keyboard: the line under the
+pointer is the selected one, a click runs it, clicking a setting cycles it,
+and the wheel moves the selection. A click also gets you past the briefing,
+the death screen and the ending.
+
+
+------------------------------------------------------------------------------
+3. SETTINGS
+------------------------------------------------------------------------------
+
+In the menu. All of them are kept in the save directory between sessions,
+together with the blocks you have opened.
+
+  Block          which block to start, limited to the ones you have opened
+  Difficulty     Easy time, Hard time, Death row. See section 8
+  Mouse input    automatic, or pointer with edge turns. See below
+  Turn           normal, or reversed if your mouse turns you the wrong way
+  Vertical look  off to start with, then normal or inverted
+  Mouse speed    nine steps, the third by default
+
+THE VERTICAL LOOK IS OFF OUT OF THE BOX and the mouse does nothing but turn,
+which is how this kind of game was played. It costs you nothing: a shot goes
+straight out from the sight whatever the view is tilted to, and guards move
+with the horizon, so tilting never helps you hit anything. It also means the
+sight sits dead level and never moves on its own.
+
+Turn it on if you want to look up and down. Then the view levels itself about
+half a second after you stop, so it cannot be left pointing at the ceiling,
+and that slow slide back to level is the only thing that ever moves the sight
+by itself.
+
+IF TURNING GOES THE WRONG WAY, set Turn to reversed. The game itself turns the
+way it should, this is checked by a test that casts rays and looks at what
+lands where, so a wrong direction comes from the mouse or from the window
+manager rather than from the game. F6 opens a panel that says which of the
+three input paths is being used, whether the pointer can be recentred, what
+the last movement reported, and how far you turned in the last second.
+
+MOUSE INPUT. On automatic the game works out what it can use, in the order
+below. If the pointer still ends up stuck against the edge of the window with
+the view refusing to turn, set this to pointer: the game then never asks for
+relative mode at all, drives the view from the pointer alone, hides the cursor
+with an empty cursor image, and turns on its own while the pointer sits
+against an edge. It costs nothing on a machine where the usual way works, so
+it is a safe thing to leave on.
+
+THE THREE PATHS. Normally the game asks for relative mouse mode, the pointer
+is parked and only the movement counts, which is what every shooter does.
+Some window managers say yes to that and then do nothing about it, so the game
+does not take their word for it: if the pointer is seen to move, relative mode
+is treated as absent however it answers. Then the turn comes from the motion
+events when they arrive, or from reading the pointer twice when they do not,
+never from both, and the pointer is dragged back to the middle of the window
+whenever it strays. The drag happens early, well before the pointer can reach a
+side, and if the pointer slips out of the window it is taken back as soon as
+that is noticed. Where the drag is refused the pointer ends up parked against
+the edge with nowhere left to go, and the view keeps turning on its own for as
+long as the hand is still moving, stopping a quarter of a second after the
+mouse is let go so a pointer left out there cannot spin you round and round.
+
+Under WSL the arrow you see may be the Windows pointer rather than the one the
+game controls, and hiding that is not something the game can reach. Keeping
+the pointer dragged back to the middle is the next best thing: it sits under
+the crosshair instead of wandering off.
+
+F6 tells you which of these you are in: what relative mode claims, whether the
+pointer is seen moving, which path the last turn came through, and whether the
+recentre takes. The cursor is hidden twice over, by asking and by putting an
+empty cursor on, because asking is also ignored in places. Running in a window
+with F11 instead of fullscreen is worth a try: some window managers hand the
+pointer over properly in one mode and not in the other.
+
+
+------------------------------------------------------------------------------
+4. THE POINT OF IT
+------------------------------------------------------------------------------
+
+You are twenty years into a sentence and the bar on your cell door did not
+catch tonight. Get out through three blocks:
+
+  1. D Block, the cells, the wings and the stairwell
+  2. Laundry and workshops, the service floor
+  3. The yard and the gatehouse, open ground and the riot squad
+
+Each block ends at an exit tile, a door or a gate you press space at. Walking
+out of a block opens the next one in the menu, and nothing else does: you
+cannot pick a block you have not earned. Health, armour, weapons and
+ammunition carry from one block into the next.
+
+Dying puts you back at the start of the block you were in, with the loadout
+you walked in with. The block restarts completely, so the bodies and the
+dropped weapons from your last attempt are gone.
+
+You start the night with a hatchet, a revolver, twenty bullets and a vest at
+half strength.
+
+
+------------------------------------------------------------------------------
+5. WEAPONS
+------------------------------------------------------------------------------
+
+  Slot 1  Hatchet          22 to 34 damage, reaches 1.5 tiles, no ammunition
+                           Twice as hard when you hit a guard from behind.
+                           Carries 2.5 tiles of noise, which is nothing.
+
+  Slot 2  Revolver         17 to 27 damage, reaches 28 tiles, one shot per
+                           press, bullets. Carries 8 tiles of noise, 4 with
+                           the silencer on.
+
+  Slot 3  Uzi              6 to 11 damage a round, eleven rounds a second
+                           while you hold the button, reaches 22 tiles,
+                           bullets. Carries 7 tiles of noise, 5 with the
+                           silencer on. Spreads more the faster you move.
+
+  Slot 4  Rocket launcher  90 damage at the centre of a blast 2.7 tiles
+                           across, rockets. It hurts you too. Carries 12
+                           tiles of noise, and the explosion itself 14.
+
+  Slot 5  Grenade          72 damage over 2.5 tiles, a fuse of 1.6 seconds.
+                           It arcs, bounces off walls and rolls, so it can be
+                           put round a corner. The throw itself is quiet.
+
+  Slot 6  Flash grenade    no damage. Everything that can see it within 6.5
+                           tiles is blinded for up to 4.5 seconds, you
+                           included if you are close and looking. A blinded
+                           guard stops shooting and backs away.
+
+  Slot 7  Throwing knife   press 7 to hold it and fire to throw, or press R
+                           at any time and it is thrown without putting the
+                           gun away. 45 damage, 77 in the back, where it
+                           kills a guard
+                           or a sergeant outright and leaves a riot captain
+                           on his last legs. Carries 2 tiles of noise, which
+                           is less than the body makes. Three throws in a
+                           blade: it lands on the floor where it hit, you
+                           walk over it to pick it up again, and the third
+                           throw snaps it. You can carry four blades.
+
+  Not a slot  Leg trap     B sets one on the floor in front of you, and it
+                           stays there until something walks into it. 60 to a
+                           dog, which kills it outright, 45 to a man, which
+                           kills a guard and leaves anybody bigger pinned for
+                           two and a half seconds and shouting about it. You
+                           never spring your own. Carry up to four.
+
+AIMING. The sight sits on the horizon, and that is exactly where the bullet
+goes. A shot connects only while the sight is on the figure itself, roughly
+half a tile across the shoulders, so a round that passes beside a guard misses
+him however close it looked. The uzi spreads a little, and more the faster you
+are moving, which is the one thing that puts a round somewhere you did not
+point it.
+
+The vertical look, when it is switched on, is for seeing and not for aiming:
+guards move up and down the screen with the horizon, so they stay under the
+sight whatever the view is doing. A view left tilted would leave the sight
+somewhere you are not looking, so it eases itself back to level about half a
+second after you stop. Home levels it at once. Out of the box the whole thing
+is off and the sight never leaves the middle of the screen.
+
+The view dips a little with each step, which is the walk and nothing else: it
+is under three pixels either way at a thousand pixels of screen, and it
+averages out to exactly level, standing still or running.
+
+The revolver and the uzi share one pool of bullets.
+
+Carrying limits: 150 bullets, 20 rockets, 9 grenades, 6 flash grenades.
+
+THE SILENCER is a pickup. Once you have it, T fits it to the revolver or the
+uzi and takes it off again. A fitted can costs fifteen percent of the damage
+and most of the noise, and it is the difference between killing one guard and
+fighting the whole wing. The status bar says "+ can" when it is on.
+
+
+------------------------------------------------------------------------------
+6. HEALTH, VEST AND PICKUPS
+------------------------------------------------------------------------------
+
+Health starts at 100 and stops there. The vest starts at 50 percent and goes
+to 100. While you have any vest left it soaks 55 percent of every hit and
+wears down by what it soaked, so it runs out faster in a long fight.
+
+  Uzi                 the weapon, and 16 bullets
+  Rocket launcher     the weapon, and 3 rockets
+  Grenades            2 grenades
+  Flash grenades      2 flash grenades
+  Bullets             8 bullets
+  Box of bullets      25 bullets
+  Rockets             2 rockets
+  Vest                25 percent
+  Riot vest           50 percent
+  First aid           25 health
+  Cold food           10 health
+  Silencer            fits the revolver and the uzi
+  Red, blue, yellow key   opens the door of that colour, in that block only
+
+You walk over a pickup to take it, and you leave it where it is if you are
+already full of what it holds, so nothing is wasted.
+
+Most guards are carrying nothing worth taking. Roughly one in three of the
+blue ones leaves a handful of bullets, and about half of the sergeants and the
+captains leave something, which for a captain might be rockets, grenades or a
+vest. What they drop stays on the floor. Across a whole block that works out
+at four or five bodies worth picking over out of ten or more, so ammunition is
+something to spend carefully rather than something to swim in.
+
+
+------------------------------------------------------------------------------
+7. QUIET WORK
+------------------------------------------------------------------------------
+
+EXECUTIONS. Walk up to a guard who has not seen you, or stand behind one who
+has lost you, and the fire button kills him in one move instead of shooting.
+You need to be within about a tile and facing him. With the hatchet in hand it
+is the throat or the back of the head, bare handed it is the neck. All three
+are silent, so the guard at the end of the corridor keeps walking his round.
+The screen tells you when it is on offer.
+
+THE THROWING KNIFE is the other quiet way of doing it, and the only one that
+works at a distance. It drops where it hit, so a kill at the end of a
+corridor means walking down there to get the blade back. Three throws and it
+is scrap.
+
+GUARDS ASLEEP IN A CHAIR turn up here and there, usually by a door that gets
+little traffic. A sleeper sees nothing and hears nothing until a noise wakes
+him, so he can be walked up to from the front and executed like any guard
+caught unaware. Anything louder than a knife will wake him: a shot nearby, a
+door being opened next to him, a shout, and the klaxon wakes every sleeper in
+the block. Once up he is an ordinary guard of his tier, groggy for about a
+second.
+
+LEG TRAPS are for the two things you cannot walk up behind. A dog comes at
+you in a straight line and does not look down, so a trap in the doorway it
+will come through kills it before it reaches you. A guard walking his round is
+doing the same thing, and a trap on his route takes him out of the block
+without a shot. An alert guard is different: he is looking where he is going
+and spots a trap about seven times in ten, and then he steps over it.
+
+Measured, somebody sent straight down a lane with a trap in it, twenty runs
+of each:
+
+  a dog, either way                 sprang it 20 of 20, died 20 of 20
+  a guard on his round              sprang it 20 of 20, died 20 of 20
+  a guard already hunting you       sprang it  6 of 20
+  a riot captain already hunting    sprang it  5 of 20, lived, pinned and
+                                    down about half his health
+
+Traps come out of lockers, and there are one or two lying about each block.
+Setting one makes almost no noise; what happens afterwards does.
+
+BODIES stay where they fall for the rest of the block. A guard who walks past
+one raises the alarm and starts looking, so where you leave them matters.
+
+NOISE is what gives you away more often than your silhouette. Every shot
+carries the distance listed in section 5, measured on foot through the
+doorways rather than straight through walls, and it is answered by the two to
+four guards nearest to it, never by the whole block. Anyone further off who
+heard something only gets sharper where he stands.
+
+
+------------------------------------------------------------------------------
+8. THE OTHER PRISONERS
+------------------------------------------------------------------------------
+
+Some cells are not empty. Most of what is in them is scenery and says what
+this place is: a skeleton still hanging from the shackles on the wall, a man
+who used his own sheet and the stool he kicked over, a body face down, and in
+one or two of them nothing anybody could put a name to. None of it moves and
+none of it can be used.
+
+Some of them are alive. Open his cell door with space the way you open any
+door, step in front of him, and the screen offers "[space] tell him to come
+with you". Press it and he is gone: he does not wait for you and he does not
+tag along. He goes looking for guards, the nearest one first, wherever in the
+block that is, working any door that is not locked with a key, bars included.
+When he finds one he goes at him with his hands. He only falls in behind you
+when there is nobody left on the level to go after.
+
+Let two out in D Block and they take about three guards down between them
+before they are both dead, which takes under a minute. That is what they are:
+a minute of somebody else's problem.
+
+What he is worth, measured over forty fights of each kind:
+
+  one on one with a guard, three tiles apart     he wins about three in four
+  the same fight starting seven tiles apart      he dies about three in four
+  one on one with a sergeant                     he dies, almost every time
+  coming at a guard who has not noticed him      he wins every time
+  coming at a sergeant from behind               he wins about two in three
+  coming at a riot captain from behind           he dies, having taken half
+                                                 the captain's health with him
+
+So he is not a soldier. He has sixteen hit points, no gun and no armour, and
+a guard who sees him coming across open ground kills him before he arrives.
+Used properly he is a distraction that hits back: while a guard is dealing
+with him, that guard is not dealing with you.
+
+Two other things worth knowing. A guard who has lost you will fight a loose
+prisoner where he stands, and seeing one sets off the klaxon, but it tells
+nobody where you are. And your bullets do not pass through him: a prisoner
+between you and a guard takes the shot.
+
+The status bar counts them: how many are out, and how many are still on
+their feet.
+
+
+------------------------------------------------------------------------------
+9. THE GUARDS
+------------------------------------------------------------------------------
+
+Three tiers, one brain, told apart by the uniform.
+
+                        Guard         Sergeant      Riot captain
+  uniform               blue          olive, vest   black, red visor
+  health                28            48            85
+  speed                 1.95          2.35          2.7 tiles a second
+  eyesight              15 tiles      18 tiles      22 tiles
+  hearing               8 tiles       10 tiles      12 tiles
+  reaction              0.4 to 0.7s   0.22 to 0.4s  0.12 to 0.24s
+  damage a shot         5 to 10       4 to 8        9 to 15
+  shots in a burst      1 to 2        3 to 5        2 to 3
+  keeps a distance of   5.5 tiles     7 tiles       4.5 tiles
+  gives up after        11 seconds    20 seconds    40 seconds
+  throws grenades       no            rarely        often
+
+THE DOGS are the fourth kind and do not count as guards. They carry nothing,
+tell nobody anything and have no round to keep: they roam their end of the
+block and run at the nearest prisoner they can see, which means you or any
+man you have let out.
+
+                        Dog
+  health                34
+  speed                 3.5 tiles a second, faster than anybody
+  eyesight              13 tiles
+  hearing               12 tiles
+  damage a bite         11 to 19, about twice a second, within a tile
+
+A dog beats a freed prisoner about three times in four, which is what they
+are for. Against you they are two revolver rounds, as long as you see one
+coming: the bark is the warning.
+
+THEY ONLY OPEN FIRE WHEN THEY CAN SEE YOU. Nothing else makes a guard shoot.
+
+ON A QUIET ROUND each of them is doing one of three things, picked when the
+block starts so two in the same corridor do not move alike: standing a post
+and scanning from it, pacing a route and walking it back, or sweeping a wing
+by picking a new corner of it each time he arrives. They stop to look around,
+and they keep to the corridors and the rooms: on a quiet round nobody rattles
+cell doors, which is the only reason you get out of yours.
+
+A SHOT IS ONLY HEARD IN THE ROOM IT WAS FIRED IN. The block is cut into
+areas, a room or a stretch of corridor between doors, and gunfire carries
+inside one of them and no further. Anybody in the next room along hears
+something, gets sharper and walks a different round, but he is not coming and
+he has no idea where you are. Rockets and grenades are the exception: a blast
+goes through the whole wing, everyone hears it, and the two or three nearest
+to it walk in while the rest change what they are doing where they stand.
+
+NOBODY LEAVES HIS CORNER EMPTY. A guard belongs to the area he starts in and
+his round stays inside it. He will walk out of it to go and look at something,
+but only while a colleague is still in there: the last man in a room holds it
+and watches the door instead of going.
+
+WHEN SOMETHING HAPPENS they go and look, which is not the same as attacking. A
+shot, a scream, a door or a body sends the nearest two to four to the spot.
+Each of them walks to the place he has a reason to believe you are, on a path
+worked out to that spot, and when he arrives and finds nothing he looks around
+and tries the next corner along until he runs out of patience. Nobody ever
+walks towards where you actually are. Break line of sight and move, and what
+follows you is a search.
+
+THEY START SPREAD OUT. However a level file is drawn, nobody begins the block
+standing on top of a colleague: anyone who starts crowded is moved to a free
+tile of his own area, so you never walk into four men in one doorway.
+
+THE KLAXON goes off the first time anyone sees you. It reaches the whole block
+and makes every guard sharper for a few seconds, a wider cone, more scanning,
+quicker to react, but it tells nobody where you are. The guard who saw you
+calls it in on the radio, and that reaches five and a half tiles and two
+colleagues at a time.
+
+IN A FIGHT they hold the distance their weapon likes, strafe while they shoot,
+spread out instead of queueing in the doorway, open doors, step out of the way
+of a rocket, break line of sight to recover when they are hurting, and lob a
+grenade at the corner they last saw you behind. They are solid to each other,
+so a squad arrives spread across the room instead of stacked in one tile.
+
+DIFFICULTY changes four things: the damage they do, how often they hit, how
+long they take to react, and how many of them answer one noise.
+
+  Easy time    65 percent damage, 78 percent accuracy, slow reaction, 2 answer
+  Hard time    the numbers in the table above, 3 answer
+  Death row    140 percent damage, 122 percent accuracy, quick off the
+               mark, 4 answer
+
+However loud it gets, only that many guards are sent anywhere, and the number
+on their feet at any moment is capped at one more than that. A guard who sees
+you with his own eyes always engages, cap or no cap, so walking into a room
+full of them is still a bad idea, but a shot in a corridor brings three or
+four, never the block.
+
+
+------------------------------------------------------------------------------
+10. DOORS, KEYS AND THE MAP
+------------------------------------------------------------------------------
+
+Press space in front of a door to open it, and in front of an exit tile to
+finish the block. A door slides into the wall it is flush with and closes
+again on its own a few seconds later unless somebody is standing in it.
+
+Three locks, red, blue and yellow, each needing the key of that colour. A key
+is never lying on the floor waiting for you. Each one is in one of three
+places, and the level file says which:
+
+  on a guard     the man furthest from where you start is carrying it, and
+                 he drops it when he goes down, whichever way he goes down
+  in a locker    the locker furthest from where you start has it among
+                 whatever else is in there
+  behind a panel a section of wall somewhere slides back, and it is in the
+                 space behind it
+
+Keys do not carry from one block to the next.
+
+LOCKERS are the steel cupboards set into the walls. Press space in front of
+one and it opens, once. What is in it was decided when the block loaded: it
+can be bullets, a box of them, food, a first aid kit, a vest, a leg trap,
+grenades, flash grenades, a knife, rockets, an uzi, a riot vest, the
+silencer, two or three of those, or nothing at all. Every block has armour in
+a locker somewhere: if the dice leave it out, one is put in. Roughly one in
+five has already been cleared out. Whatever is in there falls at your feet,
+so you pick it up by walking into it.
+
+PANELS are sections of wall that slide back when you press space on them.
+They are built out of the same wall as everything around them, so from down
+the corridor there is nothing to see, but one has been pushed before and it
+shows: a hairline down both sides where it does not quite meet the rest, the
+dust and the scrape marks along the floor at its foot, and a worn patch at
+chest height where hands have pushed it. Walk up to one and the screen says
+"[space] this section is loose". They never show on the map. They are worth
+looking for because that is where a key or a cache is.
+
+Tab turns the map on and off. It sits in a corner and shows the walls, the
+doors coloured by their lock, the exit in green, the pickups, the guards in
+orange while they are calm and red once they are not, the bodies in dark red,
+and you as an arrow.
+
+
+------------------------------------------------------------------------------
+11. TESTING IT: CONSOLE, CHEATS, SHOOTING RANGE
+------------------------------------------------------------------------------
+
+The developer console is on F2 or on the tilde key. It pauses the game, takes
+a line and runs it. Up and down recall what you typed before, escape closes
+it, and "help" lists everything.
+
+  god                 no damage, also on F3
+  invis               the guards cannot see you, also on F4
+  ammo                ammunition never runs out, also on F5
+  noclip              walk through walls
+  give <what>         give all, or weapons, ammo, keys, or one weapon by name
+  heal [amount]       default full
+  armor [amount]      default full
+  guard <tier> [n] [dummy|asleep]
+                      drop n guards of that tier in front of you, tier 4
+                      being a dog. "dummy" makes them stand there and take it
+                      without fighting back, "asleep" puts them in a chair
+  dog [n]             the same as guard 4
+  trap [n]            put n leg traps in your pocket, four by default
+  clear               remove every guard
+  killall             kill every guard where he stands
+  distract            every guard forgets you and goes back to his round
+  free                let every prisoner on the level out of his cell
+  mate                put one freed prisoner in front of you
+  freeze              guards stop thinking, on and off
+  dmg                 print what every one of your hits took off
+  where               print your position, your tile and your facing
+  tp <x> <y>          move yourself there
+  block <1..3>        load a block, ignoring what you have opened
+  range               the shooting range
+  restart             start this level again
+
+Whatever cheat is on is printed in green above the status bar. F6 shows the
+mouse diagnostics described in section 3.
+
+THE SHOOTING RANGE, from the menu or with "range", is a long hall with a bench
+holding every weapon, every box of ammunition, both vests and the silencer.
+Targets stand down the lane at roughly 5, 15, 25, 35 and 40 tiles, with three
+more standing together for testing a blast. The markers on the walls are five
+tiles apart. The targets do not move and do not shoot back, they say what each
+hit took off them, and they get back up a couple of seconds after they drop,
+so you can measure a weapon and see exactly where its range runs out. The two
+furthest targets are past every barrel in the game, which is the point of
+them.
+
+
+------------------------------------------------------------------------------
+12. LEVEL FILES
+------------------------------------------------------------------------------
+
+A level is a text file in levels/. Everything above the [map] marker is a
+"key = value" header, everything below it is the grid, read exactly as typed:
+a space and a dot are both floor, so trailing blanks count. Lines starting
+with a semicolon are comments.
+
+  name      shown on the loading screen and the status bar
+  next      the file to load after this one. Leaving it out ends the game
+  brief     the paragraph on the loading screen
+  ceiling   three numbers from 0 to 1, the ceiling colour
+  floor     the floor colour
+  redkey    where the red key is: guard, locker or secret. Leaving it out
+            means there is no red key in this block
+  bluekey   the same for the blue one
+  yellowkey the same for the yellow one
+  dummies   true makes every guard a target that will not fight back
+  respawn   true brings dropped targets back
+  readout   true prints the damage of every hit
+
+Tiles:
+
+  WALLS     #  stone        =  brick       %  cell tile
+            &  metal        ~  rock        *  wall with a poster
+
+  DOORS     |  steel        +  barred cell door
+            r  locked red   b  locked blue   y  locked yellow
+
+  EXIT      X  a wall tile you press space at to finish the block
+
+  START     N S W E, one per level, the letter is the way you face
+
+  GUARDS    1  guard        2  sergeant    3  riot captain
+            4  dog          z  a guard asleep in a chair
+            Z  a sergeant asleep in a chair
+
+  WEAPONS   u  uzi          l  rocket launcher
+            g  grenades     f  flash grenades
+            K  throwing knife, three throws in it
+
+  AMMO      a  bullets      A  box of bullets      o  rockets
+
+  GEAR      v  vest         V  riot vest   m  first aid
+            h  food         s  silencer
+
+  KEYS      R  red          B  blue        Y  yellow
+
+  TRAP      T  a leg trap to carry, set with B
+
+  LOCKER    L  a steel cupboard set into the wall. Solid, opens once
+
+  PANEL     /  a section of wall that slides back when pushed. It is
+               drawn as whatever its neighbours are
+
+  SCENERY   k  a skeleton chained to the wall, sitting where he died
+            n  a prisoner who hanged himself, and the stool he kicked
+            d  a dead prisoner face down on the floor
+            c  what is left of one, and the blood around it
+
+  PRISONER  p  a prisoner who is still alive. Open his door, stand in
+               front of him and press space, and he fights for you
+
+A door slides into the wall it is flush with, so a door wants solid tiles on
+both sides along one axis. Put a locked door in a wall and put its key
+somewhere reachable without it.
+
+To add a block: write levels/04.txt, point the "next" of 03.txt at it, and add
+its path to the LEVELS list at the top of main.lua.
+
+An example, the smallest level that works:
+
+  name = Test
+  brief = one room, one guard, one door out
+
+  [map]
+  ##########
+  #........#
+  #.E....1.#
+  #........#
+  #####X####
+  [end]
+
+
+------------------------------------------------------------------------------
+13. WHAT IS IN WHICH FILE
+------------------------------------------------------------------------------
+
+  main.lua              love callbacks, menu, the run through the blocks
+  conf.lua              window settings
+  levels/               the level files, plain text
+  src/level.lua         reads a level file, doors, line of sight, ray casting
+  src/raycaster.lua     the 3D view: walls, sprites, the depth buffer
+  src/textures.lua      wall textures, written pixel by pixel into one atlas
+  src/art.lua           guards, pickups, explosions, the weapon in your hands
+  src/world.lua         one level being played, and everything in it
+  src/player.lua        movement, weapons, pickups, the executions
+  src/weapons.lua       what the player can carry
+  src/enemy.lua         the guards: senses, rounds, fighting, dying
+  src/nav.lua           the shared distance field, paths, cover and flanking
+  src/projectile.lua    rockets and grenades
+  src/fx.lua            blood, sparks, smoke, fireballs
+  src/hud.lua           status bar, map, menus
+  src/audio.lua         generated sound effects
+  src/progress.lua      which blocks are open, and the settings
+  src/console.lua       the developer console and the cheats
+
+==============================================================================
