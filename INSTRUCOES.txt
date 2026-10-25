@@ -686,4 +686,16 @@ An example, the smallest level that works:
   src/progress.lua      which blocks are open, and the settings
   src/console.lua       the developer console and the cheats
 
+
+------------------------------------------------------------------------------
+14. LICENCE
+------------------------------------------------------------------------------
+
+PolyForm Noncommercial 1.0.0, the full text is in LICENSE.md next to this
+file. Use it, read it, change it, build on it and pass it on, for anything
+that is not commercial. Selling it, or any work based on it, is not allowed.
+
+Copyright 2026 Eduardo Santos.
+
+
 ==============================================================================

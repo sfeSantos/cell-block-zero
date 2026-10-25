@@ -355,6 +355,12 @@ Leaving `next` out ends the game when that block is finished. A door slides
 into the wall it is flush with, so put a locked door in a wall and the key
 somewhere you can reach without it.
 
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE.md). Use it, change it, build on it and
+pass it on freely, for any purpose that is not commercial. Selling it, or
+anything made from it, is not allowed.
+
 ## Layout
 
 | File | What it does |

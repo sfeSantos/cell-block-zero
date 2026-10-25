@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cell Block Zero</title>
+<meta name="description" content="A prison break in the shape of the first Wolfenstein 3D, written in Lua for LOVE 11.x with no asset files at all.">
+<meta property="og:title" content="Cell Block Zero">
+<meta property="og:description" content="A prison break in the shape of the first Wolfenstein 3D. No asset files: every texture, sprite and sound is generated at startup.">
+<meta property="og:image" content="shots/corridor.png">
+<style>
+:root {
+    --ink: #e7e3d8;
+    --dim: #9a958a;
+    --bg: #15161a;
+    --panel: #1d1f24;
+    --line: #2b2e35;
+    --hot: #e0b341;
+    --blood: #b4453c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+a { color: var(--hot); }
+
+header {
+    border-bottom: 1px solid var(--line);
+    background:
+        linear-gradient(180deg, rgba(21,22,26,.55), rgba(21,22,26,.97)),
+        url(shots/corridor.png) center 38% / cover;
+}
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+header .wrap { padding-top: 74px; padding-bottom: 66px; }
+
+h1 {
+    margin: 0;
+    font: 700 54px/1.05 ui-monospace, "Consolas", monospace;
+    letter-spacing: -1px;
+}
+
+h1 span { color: var(--hot); }
+
+.tag {
+    margin: 14px 0 26px;
+    font-size: 19px;
+    color: var(--ink);
+    max-width: 44em;
+}
+
+.tag b { color: var(--hot); font-weight: 600; }
+
+.links a {
+    display: inline-block;
+    margin: 0 10px 10px 0;
+    padding: 10px 18px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--panel);
+    color: var(--ink);
+    text-decoration: none;
+    font: 600 14px ui-monospace, "Consolas", monospace;
+}
+
+.links a:hover { border-color: var(--hot); color: var(--hot); }
+.links a.main { background: var(--hot); border-color: var(--hot); color: #17181c; }
+.links a.main:hover { background: #f0c454; color: #17181c; }
+
+section { padding: 56px 0 10px; }
+
+h2 {
+    margin: 0 0 6px;
+    font: 700 13px ui-monospace, "Consolas", monospace;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--hot);
+}
+
+h2 + p { margin-top: 0; color: var(--dim); max-width: 46em; }
+
+figure {
+    margin: 0 0 34px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--panel);
+    overflow: hidden;
+}
+
+figure img { display: block; width: 100%; image-rendering: pixelated; }
+
+figcaption {
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    font-size: 14.5px;
+    color: var(--dim);
+}
+
+figcaption b { color: var(--ink); font-weight: 600; }
+
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+.card {
+    padding: 18px 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--panel);
+}
+
+.card h3 {
+    margin: 0 0 6px;
+    font: 600 15px ui-monospace, "Consolas", monospace;
+    color: var(--hot);
+}
+
+.card p { margin: 0; font-size: 14.5px; color: var(--dim); }
+
+pre {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #101115;
+    color: #cfd6c8;
+    font: 13.5px/1.6 ui-monospace, "Consolas", monospace;
+    overflow-x: auto;
+}
+
+ol { color: var(--dim); max-width: 46em; }
+ol b { color: var(--ink); font-weight: 600; }
+
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+th { color: var(--hot); font: 600 12.5px ui-monospace, monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+td:first-child { color: var(--ink); white-space: nowrap; }
+td { color: var(--dim); }
+
+footer {
+    margin-top: 60px;
+    padding: 26px 0 50px;
+    border-top: 1px solid var(--line);
+    color: var(--dim);
+    font-size: 14px;
+}
+
+@media (max-width: 760px) {
+    h1 { font-size: 38px; }
+    .pair, .cards { grid-template-columns: 1fr; }
+    header .wrap { padding-top: 48px; padding-bottom: 42px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="wrap">
+    <h1>Cell Block <span>Zero</span></h1>
+    <p class="tag">A prison break in the shape of the first Wolfenstein 3D,
+    written in Lua for LÖVE 11.x. <b>No asset files at all:</b> every wall
+    texture is written pixel by pixel at startup, every sprite and every
+    first person weapon is drawn into a canvas, and every sound is
+    synthesised. Three blocks, drawn in text files.</p>
+    <p class="links">
+        <a class="main" href="https://github.com/sfeSantos/cell-block-zero">Code on GitHub</a>
+        <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/README.md">Read me</a>
+        <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/INSTRUCOES.txt">The long manual</a>
+    </p>
+</div>
+</header>
+
+<div class="wrap">
+
+<section>
+<h2>The wing</h2>
+<p>Lights out an hour ago and the bar on your door never caught. You start
+with a hatchet, a revolver and a vest at half strength.</p>
+
+<figure>
+    <img src="shots/corridor.png" alt="A long cell block corridor with a guard walking at the far end">
+    <figcaption><b>D Block.</b> Two wings of cells either side of one
+    corridor. The guards keep to their own end of it, and on a quiet round
+    nobody rattles the cell doors, which is the only reason you get out of
+    yours.</figcaption>
+</figure>
+
+<div class="pair">
+    <figure>
+        <img src="shots/cell.png" alt="A skeleton chained to a cell wall">
+        <figcaption><b>Some cells are not empty.</b> A skeleton still hanging
+        from its shackles, a man who used his own sheet, remains nobody could
+        put a name to.</figcaption>
+    </figure>
+    <figure>
+        <img src="shots/prisoner.png" alt="A prisoner in striped clothes, with a prompt to free him">
+        <figcaption><b>Some of them are alive.</b> Open the door, tell him to
+        come, and he is gone: he goes hunting guards on his own. He wins
+        about three fights in four, then dies.</figcaption>
+    </figure>
+</div>
+</section>
+
+<section>
+<h2>Quiet work</h2>
+<p>Nobody has to die loudly. A shot is heard only in the room it was fired
+in, so one careless round costs you that room and not the block.</p>
+
+<div class="pair">
+    <figure>
+        <img src="shots/sleeper.png" alt="A guard asleep in a chair with a Z above his head">
+        <figcaption><b>Asleep in a chair.</b> He sees nothing and hears
+        nothing until a noise wakes him, so he can be walked up to from the
+        front and taken out in one move.</figcaption>
+    </figure>
+    <figure>
+        <img src="shots/knife.png" alt="A throwing knife held in the first person view, a guard down the corridor">
+        <figcaption><b>The throwing knife.</b> Silent, lethal in the back,
+        three throws in a blade. It lands where it hit, so you walk down
+        there and pick it up again.</figcaption>
+    </figure>
+</div>
+</section>
+
+<section>
+<h2>When it goes wrong</h2>
+<p>And it will. Rockets and grenades carry through the whole wing: everybody
+hears those.</p>
+
+<figure>
+    <img src="shots/firefight.png" alt="A riot captain firing, muzzle flash, the alarm on screen">
+    <figcaption><b>The riot squad.</b> They hold the distance their weapon
+    likes, strafe while they shoot, spread out instead of queueing in the
+    doorway, and throw a grenade at the corner they last saw you
+    behind.</figcaption>
+</figure>
+
+<div class="pair">
+    <figure>
+        <img src="shots/dogs.png" alt="A dog charging down a dark lane with the alarm on">
+        <figcaption><b>The dogs.</b> Three and a half tiles a second, no
+        radio and no round to keep. They go for whoever is nearest, which is
+        you or any prisoner you have let out.</figcaption>
+    </figure>
+    <figure>
+        <img src="shots/yard.png" alt="The yard at night between metal sheds">
+        <figcaption><b>The yard.</b> Open ground, floodlights and the men who
+        are good at this. The last block is where the hatchet stops being
+        enough.</figcaption>
+    </figure>
+</div>
+</section>
+
+<section>
+<h2>Getting out</h2>
+<p>Keys are never lying on the floor. Each one is on a guard, in a locker or
+behind a section of wall that slides back.</p>
+
+<div class="pair">
+    <figure>
+        <img src="shots/locker.png" alt="A steel locker set into a brick wall">
+        <figcaption><b>Lockers.</b> Bullets, a vest, a leg trap, a knife, the
+        silencer, two or three of those, or nothing at all. About one in five
+        has already been cleared out.</figcaption>
+    </figure>
+    <figure>
+        <img src="shots/gate.png" alt="A yellow locked gate across a metal wall">
+        <figcaption><b>Locked gates.</b> Red, blue and yellow. The key to this
+        one is in the gatehouse, behind a panel that looks exactly like the
+        wall it sits in.</figcaption>
+    </figure>
+</div>
+
+<figure>
+    <img src="shots/map.png" alt="The game with the corner map open">
+    <figcaption><b>Tab opens the map.</b> Walls, doors coloured by their lock,
+    the exit in green, the pickups, the guards in orange while they are calm
+    and red once they are not.</figcaption>
+</figure>
+</section>
+
+<section>
+<h2>What is in it</h2>
+<div class="cards">
+    <div class="card">
+        <h3>Nothing on disk</h3>
+        <p>No images, no sound files. Textures are written pixel by pixel,
+        sprites are drawn into a canvas, sounds are synthesised at
+        startup.</p>
+    </div>
+    <div class="card">
+        <h3>Guards with a brain</h3>
+        <p>Vision cones, line of sight, patrol rounds, cover, flanking,
+        grenades. They answer a noise in twos and threes, never as a
+        block.</p>
+    </div>
+    <div class="card">
+        <h3>Levels in text files</h3>
+        <p>One character per tile. Walls, doors, guards, dogs, scenery,
+        lockers, panels and where each key hides.</p>
+    </div>
+    <div class="card">
+        <h3>Silent options</h3>
+        <p>Throat, hatchet or neck on anyone who has not seen you, a throwing
+        knife, a silencer, and leg traps for the dogs.</p>
+    </div>
+    <div class="card">
+        <h3>Prisoners</h3>
+        <p>Let one out and he goes after the guards himself. He is easy to
+        kill and he takes somebody with him.</p>
+    </div>
+    <div class="card">
+        <h3>A console</h3>
+        <p>F2 opens it: spawn guards or dogs, drop a sleeping sergeant, give
+        yourself anything, or load the shooting range.</p>
+    </div>
+</div>
+</section>
+
+<section>
+<h2>Running it</h2>
+
+<p>On Linux or macOS, with LÖVE 11.x installed:</p>
+<pre>git clone https://github.com/sfeSantos/cell-block-zero.git
+love cell-block-zero</pre>
+
+<p>On Windows:</p>
+<ol>
+    <li>Install <b>LÖVE 11.5</b> from <a href="https://love2d.org/">love2d.org</a>,
+    the 64 bit installer. Lua itself is not needed: LÖVE carries its own.</li>
+    <li>Clone or download the repository to a folder, say
+    <b>C:\Users\you\CellBlockZero</b>.</li>
+    <li>Drag that folder onto <b>love.exe</b>, or run it from a command
+    prompt:</li>
+</ol>
+<pre>"C:\Program Files\LOVE\love.exe" C:\Users\you\CellBlockZero</pre>
+
+<p>For a single file to double click, zip the <em>contents</em> of the folder,
+not the folder itself, and rename the zip to <b>cellblockzero.love</b>.</p>
+</section>
+
+<section>
+<h2>Controls</h2>
+<table>
+    <tr><th>Action</th><th>Key</th></tr>
+    <tr><td>Walk, step sideways</td><td>W and S, A and D</td></tr>
+    <tr><td>Turn</td><td>the mouse, the arrows, Q and E</td></tr>
+    <tr><td>Fire, or execute</td><td>left mouse button, or ctrl</td></tr>
+    <tr><td>Doors, lockers, panels, prisoners, the exit</td><td>space</td></tr>
+    <tr><td>Weapons</td><td>1 to 7, or the mouse wheel</td></tr>
+    <tr><td>Grenade, flash grenade, knife, leg trap</td><td>G, F, R, B</td></tr>
+    <tr><td>Silencer on and off</td><td>T</td></tr>
+    <tr><td>Map, controls, console</td><td>tab, F1, F2</td></tr>
+</table>
+</section>
+
+<footer>
+    <p>Cell Block Zero, by <a href="https://github.com/sfeSantos">Eduardo Santos</a>.
+    Built on <a href="https://love2d.org/">LÖVE</a>.
+    <a href="https://github.com/sfeSantos/cell-block-zero">Source on GitHub</a>.</p>
+    <p>Released under the
+    <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/LICENSE.md">PolyForm
+    Noncommercial 1.0.0</a> licence: use it, change it, build on it and pass it
+    on for anything that is not commercial. Selling it, or anything made from
+    it, is not allowed.</p>
+</footer>
+
+</div>
+</body>
+</html>
