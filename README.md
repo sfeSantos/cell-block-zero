@@ -6,8 +6,10 @@ text files for levels. No assets: the wall textures are written pixel by pixel
 at startup, the guards and the weapons are drawn into a canvas, the sounds are
 synthesised.
 
-You start the night with a hatchet, a revolver and a vest at half strength.
-The way out is three blocks away.
+Lights out an hour ago, and the guard who let himself into your cell was not
+there to talk. He is on the floor now, and everything you own came off him: a
+hatchet, a revolver and a vest, torn and half as good as it was. The way out
+is three blocks away and the sun comes up in a few hours.
 
 ## Running
 

@@ -107,6 +107,8 @@ figcaption b { color: var(--ink); font-weight: 600; }
 
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 
 .card {
@@ -154,7 +156,7 @@ footer {
 
 @media (max-width: 760px) {
     h1 { font-size: 38px; }
-    .pair, .cards { grid-template-columns: 1fr; }
+    .pair, .trio, .cards { grid-template-columns: 1fr; }
     header .wrap { padding-top: 48px; padding-bottom: 42px; }
 }
 </style>
@@ -181,8 +183,10 @@ footer {
 
 <section>
 <h2>The wing</h2>
-<p>Lights out an hour ago and the bar on your door never caught. You start
-with a hatchet, a revolver and a vest at half strength.</p>
+<p>Lights out an hour ago, and the guard who let himself into your cell was
+not there to talk. He is on the floor now, and everything you own came off
+him: a hatchet, a revolver and a vest, torn and half as good as it was. The
+sun comes up in a few hours.</p>
 
 <figure>
     <img src="shots/corridor.png" alt="A long cell block corridor with a guard walking at the far end">
@@ -192,18 +196,21 @@ with a hatchet, a revolver and a vest at half strength.</p>
     yours.</figcaption>
 </figure>
 
-<div class="pair">
+<div class="trio">
     <figure>
         <img src="shots/cell.png" alt="A skeleton chained to a cell wall">
-        <figcaption><b>Some cells are not empty.</b> A skeleton still hanging
-        from its shackles, a man who used his own sheet, remains nobody could
-        put a name to.</figcaption>
+        <figcaption><b>Some cells are not empty.</b> This one still has
+        somebody in it, hanging from the shackles he was left in.</figcaption>
+    </figure>
+    <figure>
+        <img src="shots/hanged.png" alt="A hanged prisoner in a cell, with the stool he kicked over">
+        <figcaption><b>Others found their own way out.</b> A sheet, the bars
+        above the door, and the stool he kicked over.</figcaption>
     </figure>
     <figure>
         <img src="shots/prisoner.png" alt="A prisoner in striped clothes, with a prompt to free him">
-        <figcaption><b>Some of them are alive.</b> Open the door, tell him to
-        come, and he is gone: he goes hunting guards on his own. He wins
-        about three fights in four, then dies.</figcaption>
+        <figcaption><b>Some of them are alive.</b> Open the door and he is
+        gone, hunting guards on his own.</figcaption>
     </figure>
 </div>
 </section>

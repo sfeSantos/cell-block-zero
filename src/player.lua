@@ -1,5 +1,5 @@
 -- The convict. Starts with a hatchet, a revolver and a vest at half strength,
--- which is exactly as much as a man gets when he knifes a guard in the laundry.
+-- which is exactly what the guard who walked into his cell was carrying.
 
 local weapons = require("src.weapons")
 

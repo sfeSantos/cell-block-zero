@@ -14,7 +14,7 @@
 
 name = D Block
 next = 02.txt
-brief = Lights out an hour ago and the bar on your door never caught. Two wings of cells, a day room, the stores, and the red key on somebody who is still walking about.
+brief = Lights out an hour ago, and the guard who let himself into your cell was not there to talk. He is on the floor now and you have his hatchet, his revolver and his vest, torn and half as good as it was. Two wings of cells, a day room, the stores, and the red key on somebody who is still walking about. Be out before the sun comes up.
 ceiling = 0.10,0.11,0.14
 floor = 0.21,0.19,0.17
 redkey = guard

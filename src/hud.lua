@@ -464,7 +464,8 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
 
     love.graphics.setFont(fonts.small)
     setColor(0.55, 0.56, 0.60)
-    love.graphics.printf("twenty years inside, one night to get out", 0, h * 0.16 + 56, w, "center")
+    love.graphics.printf("a dead guard on your cell floor, and until sunrise to be gone",
+        0, h * 0.16 + 56, w, "center")
 
     local y = h * MENU_TOP
     for i, item in ipairs(MENU) do

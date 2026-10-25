@@ -161,8 +161,13 @@ pointer over properly in one mode and not in the other.
 4. THE POINT OF IT
 ------------------------------------------------------------------------------
 
-You are twenty years into a sentence and the bar on your cell door did not
-catch tonight. Get out through three blocks:
+You are twenty years into a sentence. The guard who let himself into your
+cell an hour after lights out was not there to talk. He is on the floor now
+and you are wearing what he brought with him: a hatchet, a revolver, twenty
+bullets and a vest, torn in the scuffle and half as good as it was. The sun
+comes up in a few hours and you intend to be a long way from here.
+
+Out through three blocks:
 
   1. D Block, the cells, the wings and the stairwell
   2. Laundry and workshops, the service floor
@@ -176,9 +181,6 @@ ammunition carry from one block into the next.
 Dying puts you back at the start of the block you were in, with the loadout
 you walked in with. The block restarts completely, so the bodies and the
 dropped weapons from your last attempt are gone.
-
-You start the night with a hatchet, a revolver, twenty bullets and a vest at
-half strength.
 
 
 ------------------------------------------------------------------------------
