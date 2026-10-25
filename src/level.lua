@@ -61,6 +61,7 @@ local PROPS = {
     n = "hanged",     -- found his own way out
     d = "body",       -- a prisoner face down where he fell
     c = "remains",    -- and what the riot squad left behind
+    G = "deadguard",  -- the guard who walked into your cell, and did not walk out
 }
 
 -- A guard asleep in his chair. He is an ordinary guard of that tier until

@@ -16,7 +16,7 @@ local LEVELS = {"levels/01.txt", "levels/02.txt", "levels/03.txt"}
 local NAMES = {}
 
 local state = "menu"
-local cfg = {difficulty = 2, block = 1, invertY = 0, invertX = 1,
+local cfg = {difficulty = 2, block = 1, invertY = -1, invertX = 1,
     sens = Player.SENS_DEFAULT, pointerMode = 0}
 local saved = {unlocked = 1}
 local world, entryCarry, entryPath
@@ -406,7 +406,7 @@ function love.draw()
 
     if world and (state == "play" or state == "dead") then
         rc.draw(world, world.player, w, h)
-        hud.draw(world, w, h, rc.horizonAt(world.player))
+        hud.draw(world, w, h, rc.sightAt(world.player))
 
         if showMap then
             hud.drawMap(world, w, h)

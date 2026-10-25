@@ -7,9 +7,9 @@ at startup, the guards and the weapons are drawn into a canvas, the sounds are
 synthesised.
 
 Lights out an hour ago, and the guard who let himself into your cell was not
-there to talk. He is on the floor now, and everything you own came off him: a
-hatchet, a revolver and a vest, torn and half as good as it was. The way out
-is three blocks away and the sun comes up in a few hours.
+there to talk. He is still on the floor of it, and everything you own came
+off him: a hatchet, a revolver and a vest, torn and half as good as it was.
+The way out is three blocks away and the sun comes up in a few hours.
 
 ## Running
 
@@ -90,11 +90,13 @@ menu lines cover all of it: Mouse input, Turn, Vertical look and Mouse speed,
 with `[` and `]` changing the speed without leaving the corridor, and the lot
 is remembered between sessions along with the difficulty.
 
-The vertical look is off out of the box, so the mouse does nothing but turn
-and the sight sits dead level and never moves on its own. It costs nothing: a
-shot goes straight out from the sight whatever the view is tilted to. Turn it
-on in the menu for normal or inverted, and then the view levels itself about
-half a second after you stop looking up or down.
+The sight sits in the middle of the screen and nothing moves it except you:
+walking rocks the view and firing kicks it, and the sight stays put through
+both. Push the mouse up or down and it goes with you, and about a second
+after you stop it comes back to the middle. Looking up and down is for seeing
+rather than aiming, since a shot goes straight out from the sight whatever
+the view is tilted to, so Vertical look can also be set to off and leave the
+mouse doing nothing but turning.
 
 The sight sits on the horizon because that is where the bullet goes, and a
 shot connects only while the sight is on the figure, about half a tile across

@@ -9,6 +9,7 @@
 ;          T leg trap, set it on the floor with B
 ; scenery: k chained skeleton  n hanged man  d dead prisoner
 ;          c remains and blood   p a prisoner who is still alive
+;          G the guard you killed, on your cell floor
 ; keys:    redkey/bluekey/yellowkey say where the key is: guard, locker
 ;          or secret
 

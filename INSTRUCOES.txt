@@ -101,19 +101,21 @@ together with the blocks you have opened.
   Difficulty     Easy time, Hard time, Death row. See section 8
   Mouse input    automatic, or pointer with edge turns. See below
   Turn           normal, or reversed if your mouse turns you the wrong way
-  Vertical look  off to start with, then normal or inverted
+  Vertical look  normal, inverted, or off, which leaves the mouse turning
   Mouse speed    nine steps, the third by default
 
-THE VERTICAL LOOK IS OFF OUT OF THE BOX and the mouse does nothing but turn,
-which is how this kind of game was played. It costs you nothing: a shot goes
-straight out from the sight whatever the view is tilted to, and guards move
-with the horizon, so tilting never helps you hit anything. It also means the
-sight sits dead level and never moves on its own.
+THE SIGHT SITS IN THE MIDDLE OF THE SCREEN and nothing moves it except you.
+Walking rocks the view a little and firing kicks it, and neither touches the
+sight: it stays where it is while the world moves around it. Push the mouse
+up or down and the sight goes with it, which is the only thing that takes it
+off centre. Let go and it comes back to the middle about a second later, so
+it is never left pointing at the ceiling. Home puts it back at once.
 
-Turn it on if you want to look up and down. Then the view levels itself about
-half a second after you stop, so it cannot be left pointing at the ceiling,
-and that slow slide back to level is the only thing that ever moves the sight
-by itself.
+Looking up and down is for seeing, not for aiming: a shot goes straight out
+from the sight whatever the view is tilted to, and guards move with the
+horizon, so they stay under the sight either way. Set Vertical look to off if
+you would rather the mouse did nothing but turn, which is how this kind of
+game was played in the first place.
 
 IF TURNING GOES THE WRONG WAY, set Turn to reversed. The game itself turns the
 way it should, this is checked by a test that casts rays and looks at what
@@ -238,16 +240,13 @@ him however close it looked. The uzi spreads a little, and more the faster you
 are moving, which is the one thing that puts a round somewhere you did not
 point it.
 
-The vertical look, when it is switched on, is for seeing and not for aiming:
-guards move up and down the screen with the horizon, so they stay under the
-sight whatever the view is doing. A view left tilted would leave the sight
-somewhere you are not looking, so it eases itself back to level about half a
-second after you stop. Home levels it at once. Out of the box the whole thing
-is off and the sight never leaves the middle of the screen.
+The vertical look is for seeing and not for aiming: guards move up and down
+the screen with the horizon, so they stay under the sight whatever the view
+is doing. The sight itself only moves when you move it, and comes back to the
+middle about a second after you stop. Home levels it at once.
 
-The view dips a little with each step, which is the walk and nothing else: it
-is under three pixels either way at a thousand pixels of screen, and it
-averages out to exactly level, standing still or running.
+The view dips a little with each step and kicks when you fire. Neither of
+those moves the sight: the world rocks, the sight does not.
 
 The revolver and the uzi share one pool of bullets.
 

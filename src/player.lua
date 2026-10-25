@@ -27,8 +27,9 @@ local PITCH_LIMIT = 0.28
 -- left tilted therefore puts the sight somewhere the player is not looking,
 -- and nothing in a corridor tells you how far off level you are, so the view
 -- eases itself back once nobody is asking for a vertical look.
-local PITCH_HOLD = 0.45   -- seconds it keeps the height you looked at
-local PITCH_HOME = 2.6    -- and how quickly it comes back to level after that
+local PITCH_HOLD = 1.1    -- seconds it keeps the height you looked at
+local PITCH_HOME = 7.0    -- and then it comes home quickly, so it reads as a
+                          -- snap back and not as the sight drifting
 local SPIKE = 180         -- pixels of mouse travel in one event, past this it
                           -- is the pointer being warped, not an aim
 
@@ -81,7 +82,7 @@ function Player.new(spawn)
     self.invisible = false
     self.endlessAmmo = false
     self.sensitivity = Player.SENSITIVITY[Player.SENS_DEFAULT]
-    self.invertY = 0
+    self.invertY = -1
     self.invertX = 1
 
     return self

@@ -645,6 +645,15 @@ end
 
 art.PROP_ORDER = {"skeleton", "hanged", "body", "remains"}
 
+-- The guard on your cell floor, which is where the hatchet, the revolver and
+-- the vest came from. Drawn from the sergeant's own dead frame so it is the
+-- same man you see walking about everywhere else.
+local function deadGuard()
+    disc(30, 58, 9, {0.34, 0.06, 0.07, 0.75})
+    disc(40, 59, 6, {0.28, 0.04, 0.05, 0.6})
+    guardFrame(art.TIERS[2], "dead")
+end
+
 -- The dogs. Drawn side on, because a dog coming at you is mostly teeth and
 -- the shape only reads from the side.
 local DOG = {0.26, 0.21, 0.17}
@@ -1249,6 +1258,11 @@ function art.load()
         props[name]()
         pop()
     end
+
+    reserve("prop.deadguard")
+    push("prop.deadguard")
+    deadGuard()
+    pop()
 
     for _, frame in ipairs(art.DOG_FRAMES) do
         local name = "dg." .. frame

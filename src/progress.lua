@@ -5,14 +5,14 @@ local progress = {}
 
 local FILE = "progress.txt"
 
--- invertY 0 is the vertical look turned off, which is how this kind of game
--- was played and the only setting where the sight never moves on its own.
-local DEFAULTS = {unlocked = 1, difficulty = 2, invertY = 0, invertX = 1,
-    sens = 3, pointerMode = 0, version = 2}
+-- invertY -1 is looking up and down the usual way round, 1 is inverted and 0
+-- is off. The sight only ever moves when you ask it to, so on is the default.
+local DEFAULTS = {unlocked = 1, difficulty = 2, invertY = -1, invertX = 1,
+    sens = 3, pointerMode = 0, version = 3}
 
 -- Settings written by an older build are read, but anything this version
 -- changed the default of is taken back to the new one, once.
-local RESET_BELOW = {invertY = 2}
+local RESET_BELOW = {invertY = 3}
 
 function progress.load()
     local data = {}

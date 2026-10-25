@@ -207,6 +207,17 @@ function rc.horizonAt(player)
     return math.floor(ih * 0.5 + (player.viewZ or 0) + (player.pitch or 0) * ih * 0.38) * (scale or 1)
 end
 
+-- Where the sight goes. The same line as the horizon but without the walk
+-- and the recoil in it: the sight sits in the middle of the screen and only
+-- leaves it when you look up or down on purpose.
+function rc.sightAt(player)
+    if not ih then
+        return 0
+    end
+
+    return math.floor(ih * 0.5 + (player.pitch or 0) * ih * 0.38) * (scale or 1)
+end
+
 function rc.draw(world, player, w, h)
     if not canvas then
         rc.resize(w, h)
