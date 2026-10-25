@@ -22,7 +22,12 @@ Or pack it: `zip -9 -r cellblockzero.love . -x '*.git*'` and run
 
 1. Install LÖVE 11.5 from [love2d.org](https://love2d.org/), the 64 bit
    installer. Lua itself is not needed: LÖVE carries its own.
-2. Clone or download this folder, say to `C:\Users\you\CellBlockZero`.
+2. Clone or download this folder, say to `C:\Users\you\CellBlockZero`:
+
+```
+git clone https://github.com/sfeSantos/cell-block-zero.git CellBlockZero
+```
+
 3. Drag that folder onto `love.exe`, or run it from a command prompt:
 
 ```
