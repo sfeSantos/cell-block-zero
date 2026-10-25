@@ -21,6 +21,7 @@ local cfg = {difficulty = 2, block = 1, invertY = -1, invertX = 1,
 local saved = {unlocked = 1}
 local world, entryCarry, entryPath
 local menuSel = 1
+local report, reportNext
 local showControls = false
 local showMap = false
 local paused = false
@@ -256,6 +257,32 @@ local function carryOn()
     grabMouse(true)
 end
 
+-- The way out of a block goes through the report: what it cost, what was
+-- left in it, and how long it took. Enter carries on into the next one.
+local function showReport(nextPath)
+    report = world:report()
+    reportNext = nextPath
+    state = "report"
+    holdClock()
+    grabMouse(false)
+end
+
+local function leaveReport()
+    releaseClock()
+
+    if reportNext then
+        loadLevel(reportNext, world.player)
+        reportNext = nil
+
+        return
+    end
+
+    stats.time = clock(love.timer.getTime() - startTime)
+    stats.kills = world.player.kills
+    stats.takedowns = world.player.takedowns
+    state = "win"
+end
+
 local function finishLevel()
     local done = world.finished
 
@@ -273,8 +300,7 @@ local function finishLevel()
         end
 
         if nextPath then
-            local carry = world.player
-            loadLevel(nextPath, carry)
+            showReport(nextPath)
 
             return
         end
@@ -283,11 +309,7 @@ local function finishLevel()
     end
 
     if done == "escaped" then
-        stats.time = clock(love.timer.getTime() - startTime)
-        stats.kills = world.player.kills
-        stats.takedowns = world.player.takedowns
-        state = "win"
-        grabMouse(false)
+        showReport(nil)
 
         return
     end
@@ -453,11 +475,14 @@ end
 function love.draw()
     local w, h = love.graphics.getDimensions()
 
-    if world and (state == "play" or state == "dead") then
+    if world and (state == "play" or state == "dead" or state == "report") then
         rc.draw(world, world.player, w, h)
-        hud.draw(world, w, h, rc.sightAt(world.player))
 
-        if showMap then
+        if state ~= "report" then
+            hud.draw(world, w, h, rc.sightAt(world.player))
+        end
+
+        if showMap and state ~= "report" then
             hud.drawMap(world, w, h)
         end
 
@@ -479,6 +504,8 @@ function love.draw()
 
         if state == "dead" then
             hud.drawDead(world, w, h)
+        elseif state == "report" then
+            hud.drawReport(report, w, h, reportNext == nil)
         end
     elseif state == "briefing" then
         hud.drawBriefing(world.level, w, h, indexOf(entryPath) or 0, #LEVELS)
@@ -563,6 +590,14 @@ function love.mousepressed(x, y, button)
     if state == "briefing" then
         if button == 1 then
             beginPlay()
+        end
+
+        return
+    end
+
+    if state == "report" then
+        if button == 1 then
+            leaveReport()
         end
 
         return
@@ -755,6 +790,16 @@ function love.keypressed(key)
             beginPlay()
         elseif key == "escape" then
             state = "menu"
+        end
+
+        return
+    end
+
+    if state == "report" then
+        if key == "return" or key == "kpenter" or key == "space" then
+            leaveReport()
+        elseif key == "escape" then
+            toMenu(false)
         end
 
         return

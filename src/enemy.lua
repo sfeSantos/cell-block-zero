@@ -1145,6 +1145,7 @@ function Enemy:die(world, silent)
     end
     world:noise(self.x, self.y, silent and 2.5 or 6, self)
     world.player.kills = world.player.kills + 1
+    world:countKill(self, silent)
 
     if not self:isDog() then
         world.killed = world.killed + 1

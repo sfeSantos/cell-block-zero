@@ -80,6 +80,9 @@ function World.load(path, difficulty, carry, audio)
     self.freed = 0
     self.totalAllies = 0
     self.alarmT = 0
+    self.alarms = 0
+    self.census = {}
+    self.tally = {}
     self.messages = {}
     self.finished = nil
     self.sprites = {}
@@ -103,6 +106,7 @@ function World.load(path, difficulty, carry, audio)
             end
 
             self.enemies[#self.enemies + 1] = e
+            self.census[e.t.name] = (self.census[e.t.name] or 0) + 1
             if not e:isDog() then
                 self.total = self.total + 1
             end
@@ -129,6 +133,73 @@ function World.load(path, difficulty, carry, audio)
     self:message("[ and ] set the mouse speed")
 
     return self
+end
+
+-- Who went down, and how. Dogs are counted apart from the men, and a kill
+-- nobody heard is worth knowing about at the end of the block.
+function World:countKill(e, silent)
+    local name = e.t and e.t.name or "Guard"
+    self.tally[name] = (self.tally[name] or 0) + 1
+
+    if e.asleep then
+        self.tally.asleep = (self.tally.asleep or 0) + 1
+    end
+
+    if silent then
+        self.tally.quiet = (self.tally.quiet or 0) + 1
+    end
+end
+
+local RANKS = {"Guard", "Sergeant", "Riot captain", "Dog"}
+local PLURAL = {Guard = "Guards", Sergeant = "Sergeants",
+    ["Riot captain"] = "Riot captains", Dog = "Dogs"}
+
+-- What the block came to, read out on the way to the next one.
+function World:report()
+    local level = self.level
+    local open, missed = 0, 0
+
+    for _, box in ipairs(level.lockers) do
+        if box.opened then
+            open = open + 1
+        elseif box.stocked then
+            missed = missed + 1
+        end
+    end
+
+    local panels = 0
+    for _, panel in ipairs(level.secrets) do
+        if panel.opened then
+            panels = panels + 1
+        end
+    end
+
+    local ranks = {}
+    for _, name in ipairs(RANKS) do
+        local total = self.census[name] or 0
+        if total > 0 then
+            ranks[#ranks + 1] = {
+                name = PLURAL[name] or name,
+                killed = self.tally[name] or 0,
+                total = total,
+            }
+        end
+    end
+
+    return {
+        level = level.name,
+        time = self.time,
+        ranks = ranks,
+        quiet = self.tally.quiet or 0,
+        asleep = self.tally.asleep or 0,
+        alarms = self.alarms,
+        lockers = {open = open, total = #level.lockers, missed = missed},
+        panels = {open = panels, total = #level.secrets},
+        items = {taken = self.taken, total = self.totalItems},
+        prisoners = {freed = self.freed, total = self.totalAllies},
+        health = math.floor(self.player.health + 0.5),
+        vest = math.floor((self.player.armor or 0) + 0.5),
+    }
 end
 
 -- Blood on the floor, dropped on a handful of tiles rather than painted into
@@ -185,6 +256,7 @@ function World:stockLockers()
 
     for _, box in ipairs(lockers) do
         box.loot = {}
+        box.stocked = false
         if love.math.random() > LOOT_EMPTY then
             for _, row in ipairs(World.LOOT) do
                 if #box.loot < LOOT_MAX and love.math.random() < row[2] then
@@ -199,11 +271,16 @@ function World:stockLockers()
 
     -- there is always armour in a cupboard somewhere: going a whole block
     -- without finding any is the dice being unkind, not a design
+    for _, box in ipairs(lockers) do
+        box.stocked = #box.loot > 0
+    end
+
     if armour == 0 and #lockers > 0 then
         for _ = 1, 12 do
             local box = lockers[love.math.random(#lockers)]
             if #box.loot < LOOT_MAX then
                 box.loot[#box.loot + 1] = "vest"
+                box.stocked = true
 
                 break
             end
@@ -605,6 +682,7 @@ end
 -- anybody is. A loose prisoner is worth this much and no more.
 function World:raiseAlarm()
     if self.alarmT <= 0 then
+        self.alarms = self.alarms + 1
         self.audio.play("klaxon", 0.3)
         for _, e in ipairs(self.enemies) do
             if e.alive then

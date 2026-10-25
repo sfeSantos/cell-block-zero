@@ -161,6 +161,13 @@ directory between sessions. Health, armour, weapons and ammunition carry from
 one block to the next. Dying puts you back at the start of the block you are
 in, with the loadout you entered it with.
 
+Walking out of a block stops at a page that adds it up before the next one
+starts: how long it took, how many of each rank went down and how many were
+still on their feet, how many of those never heard it coming and how many
+went in their sleep, lockers opened and how many of the ones left behind had
+something in them, loose panels pushed, pickups taken, prisoners let out, how
+often the alarm went off, and what health and vest you walked out with.
+
 ## Weapons
 
 | Weapon | Ammunition | Notes |

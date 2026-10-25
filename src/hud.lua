@@ -606,6 +606,90 @@ function hud.drawDead(world, w, h)
         0, h * 0.38 + 100, w, "center")
 end
 
+local function clock(seconds)
+    return string.format("%d:%02d", math.floor(seconds / 60),
+        math.floor(seconds % 60))
+end
+
+local function countOf(n, one, many)
+    return string.format("%d %s", n, n == 1 and one or many)
+end
+
+-- The block, totted up. Shown on the way out of every block, before the next
+-- one starts, because what you walked past matters as much as what you shot.
+function hud.drawReport(r, w, h, last)
+    setColor(0.02, 0.02, 0.03, 0.93)
+    love.graphics.rectangle("fill", 0, 0, w, h)
+
+    love.graphics.setFont(fonts.big)
+    setColor(0.90, 0.86, 0.70)
+    love.graphics.printf(r.level .. " is behind you", 0, h * 0.10, w, "center")
+
+    love.graphics.setFont(fonts.huge)
+    setColor(0.95, 0.88, 0.45)
+    love.graphics.printf(clock(r.time), 0, h * 0.10 + 40, w, "center")
+
+    local rows = {}
+
+    for _, rank in ipairs(r.ranks) do
+        rows[#rows + 1] = {rank.name,
+            string.format("%d of %d down", rank.killed, rank.total)}
+    end
+
+    if r.quiet > 0 or r.asleep > 0 then
+        local how = countOf(r.quiet, "of them never heard it", "of them never heard it")
+        if r.asleep > 0 then
+            how = how .. ", " .. countOf(r.asleep, "in his sleep", "in their sleep")
+        end
+
+        rows[#rows + 1] = {"Quietly", how}
+    end
+
+    rows[#rows + 1] = {"", ""}
+    rows[#rows + 1] = {"Lockers", string.format("%d of %d opened%s",
+        r.lockers.open, r.lockers.total,
+        r.lockers.missed > 0
+            and string.format(", and %d of the ones you left were not empty",
+                r.lockers.missed)
+            or "")}
+
+    if r.panels.total > 0 then
+        rows[#rows + 1] = {"Loose panels",
+            string.format("%d of %d pushed", r.panels.open, r.panels.total)}
+    end
+
+    rows[#rows + 1] = {"Picked up",
+        string.format("%d of %d", r.items.taken, r.items.total)}
+
+    if r.prisoners.total > 0 then
+        rows[#rows + 1] = {"Prisoners",
+            string.format("%d of %d let out", r.prisoners.freed, r.prisoners.total)}
+    end
+
+    rows[#rows + 1] = {"Alarm", r.alarms == 0 and "never went off"
+        or countOf(r.alarms, "time", "times")}
+    rows[#rows + 1] = {"Walked out with",
+        string.format("%d health and %d vest", r.health, r.vest)}
+
+    local y = h * 0.30
+    love.graphics.setFont(fonts.text)
+    for _, row in ipairs(rows) do
+        if row[1] ~= "" then
+            setColor(0.58, 0.60, 0.64)
+            love.graphics.printf(row[1], w * 0.18, y, w * 0.28, "right")
+            setColor(0.86, 0.84, 0.76)
+            love.graphics.print(row[2], w * 0.50, y)
+        end
+
+        y = y + 26
+    end
+
+    love.graphics.setFont(fonts.small)
+    setColor(0.50, 0.52, 0.56)
+    love.graphics.printf(last and "enter for the way out"
+        or "enter for the next block", 0, h * 0.88, w, "center")
+end
+
 function hud.drawWin(stats, w, h)
     setColor(0.02, 0.03, 0.02, 0.88)
     love.graphics.rectangle("fill", 0, 0, w, h)
