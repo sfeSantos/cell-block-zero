@@ -174,6 +174,8 @@ function Level.load(path)
     self.dummies = self.header.dummies == "true"
     self.respawn = self.header.respawn == "true"
     self.readout = self.header.readout == "true"
+    -- out of doors: no ceiling tiles over the yard, only the night
+    self.sky = self.header.sky == "true"
     self.ceiling = colour(self.header.ceiling, {0.11, 0.12, 0.15})
     self.floor = colour(self.header.floor, {0.19, 0.17, 0.15})
 

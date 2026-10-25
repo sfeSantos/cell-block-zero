@@ -1418,7 +1418,7 @@ function art.load()
 
     local n = art.loaded
     if n.sprites + n.views + n.walls > 0 then
-        print(string.format("assets: %d sprites, %d weapon views, %d wall textures",
+        print(string.format("assets: %d sprites, %d weapon views, %d wall and ground textures",
             n.sprites, n.views, n.walls))
     end
 end

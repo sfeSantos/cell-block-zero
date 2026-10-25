@@ -307,6 +307,68 @@ local function loose(c)
     end
 end
 
+-- The floor and the ceiling. These two are not part of the atlas: they are
+-- tiled across the ground by the renderer, so each one is its own image with
+-- the wrap set to repeat. They are painted dark, because the level tints them
+-- with its own colour on top.
+local function concrete(c)
+    c.fill(0.33, 0.32, 0.30, 0.06)
+
+    -- slabs, four to a tile, with the grout between them
+    for _, y in ipairs({0, 32}) do
+        c.hline(y, 0, SIZE - 1, 0.21, 0.20, 0.19)
+        c.hline(y + 1, 0, SIZE - 1, 0.39, 0.38, 0.36)
+    end
+    for _, x in ipairs({0, 32}) do
+        c.vline(x, 0, SIZE - 1, 0.21, 0.20, 0.19)
+        c.vline(x + 1, 0, SIZE - 1, 0.39, 0.38, 0.36)
+    end
+
+    -- chips along the edges and grit over the middle of each slab
+    for _ = 1, 150 do
+        local x, y = math.floor(rnd() * SIZE), math.floor(rnd() * SIZE)
+        local n = 0.06 + rnd() * 0.08
+        c.px(x, y, 0.33 + n, 0.32 + n, 0.30 + n)
+    end
+    for _ = 1, 60 do
+        local x, y = math.floor(rnd() * SIZE), math.floor(rnd() * SIZE)
+        c.px(x, y, 0.24, 0.23, 0.22)
+    end
+
+    -- the drain channel down the middle of the block
+    c.rect(29, 0, 6, SIZE, 0.27, 0.27, 0.26, 0.04)
+    c.vline(29, 0, SIZE - 1, 0.19, 0.19, 0.18)
+    c.vline(34, 0, SIZE - 1, 0.19, 0.19, 0.18)
+end
+
+local function panels(c)
+    c.fill(0.26, 0.26, 0.28, 0.05)
+
+    -- a shallow coffer in the middle of the tile
+    c.rect(6, 6, 52, 52, 0.30, 0.30, 0.32, 0.04)
+    c.rect(6, 6, 52, 1, 0.38, 0.38, 0.41)
+    c.rect(6, 57, 52, 1, 0.19, 0.19, 0.21)
+    c.vline(6, 6, 57, 0.36, 0.36, 0.39)
+    c.vline(57, 6, 57, 0.19, 0.19, 0.21)
+
+    -- the beams that cross it, and their bolts
+    c.rect(0, 0, SIZE, 5, 0.22, 0.22, 0.24, 0.04)
+    c.rect(0, 0, 5, SIZE, 0.22, 0.22, 0.24, 0.04)
+    for i = 0, SIZE - 1, 16 do
+        c.px(2, i + 2, 0.40, 0.40, 0.43)
+        c.px(i + 2, 2, 0.40, 0.40, 0.43)
+    end
+
+    -- and the stain where the damp gets in
+    for y = 18, 40 do
+        for x = 20, 44 do
+            if (x * 3 + y * 5) % 11 < 2 then
+                c.px(x, y, 0.22, 0.23, 0.22)
+            end
+        end
+    end
+end
+
 local PANELS = {stoneWall, brickWall, cellWall, metalWall, rockWall, posterWall}
 
 -- The wall slots, by name, so a file in assets/walls can say which one it
@@ -320,6 +382,7 @@ textures.NAMES = {
 }
 
 textures.DIR = "assets/walls"
+textures.FLAT_DIR = "assets/flats"
 textures.loadedCount = 0
 
 -- A file of any size is sampled into the 64 by 64 slot, nearest neighbour,
@@ -344,6 +407,34 @@ local function overlay(data, slot, file)
     end
 
     return true
+end
+
+-- A flat is tiled across the ground rather than stretched over one wall, so
+-- it stays its own image and keeps its own size when it comes from a file.
+local function flat(paint, name)
+    local file = textures.FLAT_DIR .. "/" .. name .. ".png"
+    local image
+
+    if love.filesystem.getInfo and love.filesystem.getInfo(file) then
+        local ok, got = pcall(love.graphics.newImage, file)
+        if ok then
+            image = got
+            textures.loadedCount = textures.loadedCount + 1
+        else
+            print("textures: could not read " .. file)
+        end
+    end
+
+    if not image then
+        local data = love.image.newImageData(SIZE, SIZE)
+        paint(cell(data, 1))
+        image = love.graphics.newImage(data)
+    end
+
+    image:setFilter("nearest", "nearest")
+    image:setWrap("repeat", "repeat")
+
+    return image
 end
 
 function textures.load()
@@ -381,6 +472,11 @@ function textures.load()
             end
         end
     end
+
+    textures.flats = {
+        floor = flat(concrete, "floor"),
+        ceiling = flat(panels, "ceiling"),
+    }
 
     textures.image = love.graphics.newImage(data)
     textures.image:setFilter("nearest", "nearest")

@@ -16,8 +16,23 @@ local wallQuad, spriteQuad
 local zbuffer = {}
 local visible = {}
 local floorMesh, ceilMesh
+local flatFloor, flatCeil, flatBuf, flatQuads
 
 local TEX = 64
+
+-- How tall a strip of textured ground is, in pixels of the internal canvas.
+-- Two keeps the number of strips small without the perspective inside one
+-- strip going visibly wrong.
+local FLAT_STEP = 2
+
+-- Rows closer to the horizon than this are left to the plain gradient
+-- underneath: they are a hundred tiles out, and nearly black anyway.
+local FLAT_NEAR = 3
+
+-- The ground is lit well below the walls. A corridor wants to be a dark
+-- floor with light coming off the walls, not a lit stage.
+local FLOOR_DIM = 0.55
+local CEIL_DIM = 0.42
 
 local function gradientMesh(flip)
     local near = flip and 0.22 or 1.35
@@ -30,6 +45,36 @@ local function gradientMesh(flip)
     }
 
     return love.graphics.newMesh(verts, "fan", "static")
+end
+
+-- Two meshes of horizontal strips, one for the floor and one for the ceiling.
+-- Each strip is a quad with the world coordinates of its two ends as texture
+-- coordinates, which is what makes the ground run away in perspective.
+local function buildFlats()
+    flatQuads = math.ceil(ih / FLAT_STEP) + 2
+    flatBuf = {}
+    local map = {}
+
+    for i = 1, flatQuads do
+        local b = (i - 1) * 4
+        for k = 1, 4 do
+            flatBuf[b + k] = {0, 0, 0, 0, 1, 1, 1, 1}
+        end
+
+        local m = (i - 1) * 6
+        map[m + 1], map[m + 2], map[m + 3] = b + 1, b + 2, b + 3
+        map[m + 4], map[m + 5], map[m + 6] = b + 1, b + 3, b + 4
+    end
+
+    if flatFloor then
+        flatFloor:release()
+        flatCeil:release()
+    end
+
+    flatFloor = love.graphics.newMesh(flatBuf, "triangles", "stream")
+    flatFloor:setVertexMap(map)
+    flatCeil = love.graphics.newMesh(flatBuf, "triangles", "stream")
+    flatCeil:setVertexMap(map)
 end
 
 function rc.load()
@@ -52,6 +97,7 @@ function rc.resize(w, h)
 
     canvas = love.graphics.newCanvas(iw, ih)
     canvas:setFilter("nearest", "nearest")
+    buildFlats()
 end
 
 function rc.dimensions()
@@ -73,6 +119,102 @@ local function shadeOf(dist, side, light)
     end
 
     return s
+end
+
+-- The level colour says what the ground is made of in this block, the texture
+-- says what it looks like. Keeping the brightness in the texture and only the
+-- hue in the colour means a floor stays dark without the art going grey.
+local function tintOf(colour)
+    local r, g, b = colour[1], colour[2], colour[3]
+    local mean = (r + g + b) / 3
+    if mean < 0.01 then
+        return 1, 1, 1
+    end
+
+    return r / mean, g / mean, b / mean
+end
+
+local function drawFlats(world, player, horizon)
+    local flats = textures.flats
+    if not flats or not flatFloor then
+        return
+    end
+
+    local lv = world.level
+    local dirx, diry = math.cos(player.angle), math.sin(player.angle)
+    local halfFov = math.tan(rc.fov * 0.5)
+    local planex, planey = -diry * halfFov, dirx * halfFov
+    local lx, ly = dirx - planex, diry - planey
+    local rx, ry = dirx + planex, diry + planey
+    local light = player.muzzle or 0
+    local eye = ih * 0.5
+    local px, py = player.x, player.y
+
+    local function strip(n, y0, y1, p0, p1, tr, tg, tb, dim)
+        local d0 = eye / p0
+        local d1 = eye / p1
+        local b = n * 4
+        local v1, v2, v3, v4 = flatBuf[b + 1], flatBuf[b + 2], flatBuf[b + 3], flatBuf[b + 4]
+        local s = shadeOf((d0 + d1) * 0.5, 0, light) * dim
+        local r, g, bl = s * tr, s * tg, s * tb
+
+        v1[1], v1[2], v1[3], v1[4] = 0, y0, px + d0 * lx, py + d0 * ly
+        v2[1], v2[2], v2[3], v2[4] = iw, y0, px + d0 * rx, py + d0 * ry
+        v3[1], v3[2], v3[3], v3[4] = iw, y1, px + d1 * rx, py + d1 * ry
+        v4[1], v4[2], v4[3], v4[4] = 0, y1, px + d1 * lx, py + d1 * ly
+
+        v1[5], v1[6], v1[7] = r, g, bl
+        v2[5], v2[6], v2[7] = r, g, bl
+        v3[5], v3[6], v3[7] = r, g, bl
+        v4[5], v4[6], v4[7] = r, g, bl
+    end
+
+    local tr, tg, tb = tintOf(lv.floor)
+    local n, y = 0, horizon + FLAT_NEAR
+    if y < 0 then
+        y = 0
+    end
+
+    while y < ih and n < flatQuads do
+        local y1 = math.min(ih, y + FLAT_STEP)
+        strip(n, y, y1, y - horizon, y1 - horizon, tr, tg, tb, FLOOR_DIM)
+        n = n + 1
+        y = y1
+    end
+
+    if n > 0 then
+        flatFloor:setVertices(flatBuf)
+        flatFloor:setDrawRange(1, n * 6)
+        flatFloor:setTexture(flats.floor)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(flatFloor)
+    end
+
+    if lv.sky then
+        return
+    end
+
+    tr, tg, tb = tintOf(lv.ceiling)
+    n = 0
+    y = horizon - FLAT_NEAR
+    if y > ih then
+        y = ih
+    end
+
+    while y > 0 and n < flatQuads do
+        local y1 = math.max(0, y - FLAT_STEP)
+        strip(n, y, y1, horizon - y, horizon - y1, tr, tg, tb, CEIL_DIM)
+        n = n + 1
+        y = y1
+    end
+
+    if n > 0 then
+        flatCeil:setVertices(flatBuf)
+        flatCeil:setDrawRange(1, n * 6)
+        flatCeil:setTexture(flats.ceiling)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(flatCeil)
+    end
 end
 
 local function drawWalls(world, player, horizon)
@@ -236,6 +378,7 @@ function rc.draw(world, player, w, h)
     love.graphics.setColor(lv.floor)
     love.graphics.draw(floorMesh, 0, horizon, 0, iw, math.max(1, ih - horizon))
 
+    drawFlats(world, player, horizon)
     drawWalls(world, player, horizon)
     drawSprites(world, player, horizon)
 

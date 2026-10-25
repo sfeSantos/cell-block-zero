@@ -38,6 +38,15 @@ grip at the bottom of the cell. Weapons: `hatchet` and `launcher`, `grenades`,
 and fourth are with the silencer on), and `throat`, `head`, `neck` are the four
 frames of each execution.
 
+## assets/flats
+
+The ground, tiled across the floor and the ceiling of every block, 64 by 64
+and no transparency: `floor.png` and `ceiling.png`. These two are not stretched
+over one tile like a wall, they repeat, so the edges of the file want to meet
+each other. The level tints them with its own colour, which is why the ones
+drawn in code are painted dark and plain. A block with `sky = true` in its
+header, like the yard, keeps its open sky instead of a ceiling.
+
 ## assets/walls
 
 One file per wall, 64 by 64, no transparency: `stone`, `brick`, `cell`,
@@ -47,3 +56,19 @@ which are the loose panels and want to look like the wall of the same name
 with the hairline and the scuff marks on it.
 
 The game prints a line at startup saying how many files it picked up.
+
+## Making a set
+
+`tools/` has the scripts that drew what is in here, which need Python and
+Pillow:
+
+    python3 tools/guards.py assets/sprites     the three ranks, 13 frames each
+    python3 tools/dogs.py assets/sprites       the dogs
+    python3 tools/weapons.py assets/views      the weapons in your hands
+    python3 tools/walls.py assets/walls clean  walls, doors and ground
+
+`tools/walls.py` takes the look as its second argument: `clean` for a block
+somebody still washes, `dirty` for mould, soot and what was left on the floor
+after a bad night, `worn` for rust and flaking paint. It writes `floor.png`
+and `ceiling.png` along with the walls, and those two belong in
+`assets/flats`.
