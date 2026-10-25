@@ -85,6 +85,11 @@ function Player.new(spawn)
     self.invertY = -1
     self.invertX = 1
 
+    -- the knife off the guard's belt, three throws in it. addBlade is what
+    -- sets has.knife and keeps ammo.knives, which is only the total shown on
+    -- the bar, in step with the blades themselves
+    self:addBlade()
+
     return self
 end
 
@@ -115,7 +120,9 @@ function Player.carryOver(from, spawn)
         self.ammo[k] = v
     end
 
-    -- the blades come through with the wear they have on them
+    -- the blades come through with the wear they have on them, and only
+    -- those: the one the block started with is not handed out again
+    self.blades = {}
     for i, uses in ipairs(from.blades or {}) do
         self.blades[i] = uses
     end
