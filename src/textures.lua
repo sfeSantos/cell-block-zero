@@ -309,6 +309,43 @@ end
 
 local PANELS = {stoneWall, brickWall, cellWall, metalWall, rockWall, posterWall}
 
+-- The wall slots, by name, so a file in assets/walls can say which one it
+-- replaces without anybody counting rows.
+textures.NAMES = {
+    "stone", "brick", "cell", "metal", "rock", "poster",
+    "door-steel", "door-bars", "door-red", "door-blue", "door-yellow",
+    "exit", "locker", "locker-open",
+    "panel-stone", "panel-brick", "panel-cell", "panel-metal", "panel-rock",
+    "panel-poster",
+}
+
+textures.DIR = "assets/walls"
+textures.loadedCount = 0
+
+-- A file of any size is sampled into the 64 by 64 slot, nearest neighbour,
+-- so art can be supplied at whatever resolution it was drawn at.
+local function overlay(data, slot, file)
+    local ok, image = pcall(love.image.newImageData, file)
+    if not ok then
+        print("textures: could not read " .. file)
+
+        return false
+    end
+
+    local iw, ih = image:getDimensions()
+    local top = (slot - 1) * SIZE
+    for y = 0, SIZE - 1 do
+        for x = 0, SIZE - 1 do
+            local sx = math.min(iw - 1, math.floor(x * iw / SIZE))
+            local sy = math.min(ih - 1, math.floor(y * ih / SIZE))
+            local r, g, b = image:getPixel(sx, sy)
+            data:setPixel(x, top + y, r, g, b, 1)
+        end
+    end
+
+    return true
+end
+
 function textures.load()
     local data = love.image.newImageData(SIZE, SIZE * COUNT)
 
@@ -332,6 +369,17 @@ function textures.load()
         local c = cell(data, 14 + i)
         paint(c)
         loose(c)
+    end
+
+    -- and whatever the player has put in assets/walls, over the top
+    textures.loadedCount = 0
+    for slot, name in ipairs(textures.NAMES) do
+        local file = textures.DIR .. "/" .. name .. ".png"
+        if love.filesystem.getInfo and love.filesystem.getInfo(file) then
+            if overlay(data, slot, file) then
+                textures.loadedCount = textures.loadedCount + 1
+            end
+        end
     end
 
     textures.image = love.graphics.newImage(data)

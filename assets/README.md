@@ -1,0 +1,49 @@
+# Dropping your own art in here
+
+Nothing in this folder is required. Everything in the game is drawn in code at
+startup, and a file here is painted over the top of the one the code drew. Put
+in the ones you want to replace, leave out the ones you do not, and the game
+runs either way.
+
+A file is matched to what it replaces by its name.
+
+## assets/sprites
+
+Everything that stands in the world, one file per frame, square and
+transparent where it should be. 64 by 64 is what the game draws at, but any
+size works: the file is scaled into the cell. The whole cell is one tile wide
+and one tile tall, the feet belong at the bottom edge, and a figure that fills
+about two thirds of the width looks right next to the rest.
+
+| Name | What it is |
+| --- | --- |
+| `g1.<frame>.png` | guard |
+| `g2.<frame>.png` | sergeant |
+| `g3.<frame>.png` | riot captain |
+| `dg.<frame>.png` | dog |
+| `con.<frame>.png` | prisoner |
+| `prop.skeleton.png`, `prop.hanged.png`, `prop.body.png`, `prop.remains.png`, `prop.deadguard.png` | scenery |
+| `item.<name>.png` | pickups: `uzi`, `launcher`, `grenades`, `flashes`, `bullets`, `ammobox`, `rockets`, `vest`, `vestheavy`, `medkit`, `snack`, `silencer`, `redkey`, `bluekey`, `yellowkey`, `knife`, `trap`, `trapset`, `trapsprung` |
+| `fx.<name>.png` | effects: `knife`, `rocket`, `grenade`, `flash`, `boom1` to `boom4`, `pop`, `blood`, `spark`, `smoke` |
+
+Guard and prisoner frames: `idle`, `walk1` to `walk4`, `aim`, `fire`, `pain`,
+`die1`, `die2`, `die3`, `dead`, `sleep`. The dog has `walk1`, `walk2`, `bite`,
+`pain`, `dead`, and the rest of its frames point at those.
+
+## assets/views
+
+The weapon in your hands, `<weapon>.<frame>.png`, drawn at 200 by 150 with the
+grip at the bottom of the cell. Weapons: `hatchet` and `launcher`, `grenades`,
+`flashes`, `knife` have two frames, `revolver` and `uzi` have four (the third
+and fourth are with the silencer on), and `throat`, `head`, `neck` are the four
+frames of each execution.
+
+## assets/walls
+
+One file per wall, 64 by 64, no transparency: `stone`, `brick`, `cell`,
+`metal`, `rock`, `poster`, `door-steel`, `door-bars`, `door-red`, `door-blue`,
+`door-yellow`, `exit`, `locker`, `locker-open`, and `panel-stone` and friends,
+which are the loose panels and want to look like the wall of the same name
+with the hairline and the scuff marks on it.
+
+The game prints a line at startup saying how many files it picked up.

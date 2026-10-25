@@ -3,6 +3,8 @@
 -- and a cell always stands for a square one tile wide and one tile tall, so the
 -- raycaster never needs per sprite measurements.
 
+local textures = require("src.textures")
+
 local art = {}
 
 local CELL = 64
@@ -1224,8 +1226,57 @@ art.VIEW_FRAMES = {
 
 art.TAKEDOWNS = {"throat", "head", "neck"}
 
+-- Every cell is drawn in code, and then anything the player has dropped into
+-- assets/ is painted over the top of it. A file is matched to a cell by its
+-- name: assets/sprites/g2.aim.png replaces the sergeant taking aim, and
+-- assets/views/revolver.2.png the second frame of the revolver in your hands.
+-- Nothing has to be there, and whatever is missing stays as it was drawn.
+art.SPRITE_DIR = "assets/sprites"
+art.VIEW_DIR = "assets/views"
+
+art.loaded = {sprites = 0, views = 0, walls = 0}
+
+local function readImage(path)
+    if not (love.filesystem.getInfo and love.filesystem.getInfo(path)) then
+        return nil
+    end
+
+    local ok, image = pcall(love.graphics.newImage, path)
+    if not ok then
+        print("art: could not read " .. path)
+
+        return nil
+    end
+
+    image:setFilter("nearest", "nearest")
+
+    return image
+end
+
+-- Painted over the generated cell, scaled to the cell if the file is not
+-- exactly the size we draw at, so art can be supplied at any resolution.
+local function paintOver(image, x, y, w, h)
+    lg.setScissor(x, y, w, h)
+    lg.setBlendMode("replace")
+    lg.setColor(0, 0, 0, 0)
+    lg.rectangle("fill", x, y, w, h)
+    lg.setBlendMode("alpha")
+    lg.setColor(1, 1, 1, 1)
+
+    local iw, ih = image:getDimensions()
+    lg.draw(image, x, y, 0, w / iw, h / ih)
+    lg.setScissor()
+end
+
 function art.load()
     lg = love.graphics
+    art.loaded = {sprites = 0, views = 0, walls = 0}
+
+    -- loading twice has to give the same sheet, not carry on filling the
+    -- one before it
+    cells = {}
+    quads = {}
+    used = 0
 
     local sheet = lg.newCanvas(COLS * CELL, ROWS * CELL)
     sheet:setFilter("nearest", "nearest")
@@ -1308,6 +1359,16 @@ function art.load()
         pop()
     end
 
+    -- the player's own sprites, over the top of ours, while the sheet is
+    -- still the canvas being drawn to
+    for name, c in pairs(cells) do
+        local image = readImage(art.SPRITE_DIR .. "/" .. name .. ".png")
+        if image then
+            paintOver(image, c.x, c.y, CELL, CELL)
+            art.loaded.sprites = art.loaded.sprites + 1
+        end
+    end
+
     lg.setCanvas()
     lg.pop()
 
@@ -1336,6 +1397,13 @@ function art.load()
             views[name](col)
             lg.setScissor()
             lg.pop()
+            local file = string.format("%s/%s.%d.png", art.VIEW_DIR, name, col)
+            local image = readImage(file)
+            if image then
+                paintOver(image, (col - 1) * vw, (row - 1) * vh, vw, vh)
+                art.loaded.views = art.loaded.views + 1
+            end
+
             art.viewQuads[name][col] = lg.newQuad((col - 1) * vw, (row - 1) * vh,
                 vw, vh, viewSheet:getDimensions())
         end
@@ -1346,6 +1414,13 @@ function art.load()
 
     art.views = viewSheet
     art.cellSize = CELL
+    art.loaded.walls = textures.loadedCount or 0
+
+    local n = art.loaded
+    if n.sprites + n.views + n.walls > 0 then
+        print(string.format("assets: %d sprites, %d weapon views, %d wall textures",
+            n.sprites, n.views, n.walls))
+    end
 end
 
 function art.quad(name)
