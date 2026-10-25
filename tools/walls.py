@@ -400,19 +400,9 @@ def grime(t, name):
                     if RNG.random() > 0.25:
                         t.blend(x, y, (22, 22, 20), a)
 
-        # blood goes where it stays: pools on the floor, a smear on the
-        # bars and on the locker somebody was dragged past. Not on every
-        # wall, or a corridor of the same tile turns into a slaughterhouse.
-        if name == "floor":
-            splat(t, RNG.randint(20, 42), RNG.randint(18, 40), 15, (104, 16, 16))
-            splat(t, RNG.randint(8, 54), RNG.randint(8, 54), 7, (84, 13, 13))
-        elif name in ("door-bars", "locker"):
-            cx, cy = RNG.randint(20, 44), RNG.randint(26, 40)
-            splat(t, cx, cy, 5, (96, 15, 15))
-            for x in range(cx - 3, cx + 4, 3):
-                run = RNG.randint(6, 14)
-                for i in range(run):
-                    t.blend(x, cy + 3 + i, (78, 12, 12), 0.55 * (1 - i / run))
+        # no blood in here. One file is painted on every tile of its kind,
+        # so a stain in the texture runs the length of the corridor. The
+        # world drops those on single tiles instead.
 
         if name == "cell":
             # somebody kept count on this one, scratched into the paint

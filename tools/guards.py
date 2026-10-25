@@ -51,6 +51,20 @@ TIERS = {
     ),
 }
 
+# The prisoners. Same build as a guard so they read as people at a glance,
+# in cell clothes, bare headed and with nothing but their hands.
+TIERS["con"] = dict(
+    name="Prisoner",
+    skin=(179, 143, 117), skin_lo=(142, 110, 88),
+    cloth=(143, 140, 133), cloth_lo=(110, 108, 103), cloth_hi=(176, 173, 166),
+    trouser=(102, 102, 107), trouser_lo=(76, 76, 80),
+    boot=(46, 43, 40), hat=None, hat_hi=None,
+    gun=None, gun_hi=None,
+    vest=None, visor=None, bulk=0.95, stripes=True, hair=(62, 50, 42),
+)
+
+CON_FRAMES = ("idle", "walk1", "walk2", "hit", "pain", "die1", "dead")
+
 BLOOD = (142, 24, 24)
 BLOOD_HI = (196, 44, 40)
 
@@ -152,6 +166,10 @@ def torso(c, t):
            t["cloth_lo"])
     c.box(cx - sw, 22, cx + sw, 23, t["cloth_hi"])
 
+    if t.get("stripes"):
+        for y in range(24, 40, 4):
+            c.box(cx - sw + 1, y, cx + sw - 1, y + 1, t["cloth_lo"])
+
     if t["vest"]:
         c.box(cx - sw + 2, 25, cx + sw - 2, 37, t["vest"])
         c.box(cx - 1, 25, cx, 37, t["cloth_lo"])
@@ -176,12 +194,21 @@ def arms(c, t, mode, lead=0):
         c.box(cx + sw - 1, 24, cx + sw + 7, 29, t["cloth_lo"])
         c.box(cx - sw - 11, 25, cx - sw - 6, 30, t["skin"])
         c.box(cx + sw + 6, 25, cx + sw + 11, 30, t["skin_lo"])
+    elif mode == "punch":
+        # one fist thrown at whoever is in front of him
+        c.box(cx - sw - 3, 26, cx - sw + 1, 40, t["cloth"])
+        c.box(cx - sw - 4, 40, cx - sw + 2, 44, t["skin"])
+        c.box(cx + 2, 24, cx + sw + 1, 30, t["cloth_lo"])
+        c.box(cx + sw - 2, 22, cx + sw + 8, 32, t["skin"])
+        c.box(cx + sw - 2, 22, cx + sw + 8, 24, lighten(t["skin"], 1.12))
     else:
         c.box(cx - sw - 3, 24 - lead, cx - sw + 1, 39 - lead, t["cloth"])
         c.box(cx + sw - 1, 24 + lead, cx + sw + 3, 39 + lead, t["cloth_lo"])
         c.box(cx - sw - 3, 39 - lead, cx - sw + 1, 42 - lead, t["skin"])
         c.box(cx + sw - 1, 39 + lead, cx + sw + 3, 42 + lead, t["skin"])
-        c.box(cx + sw, 36 + lead, cx + sw + 7, 39 + lead, t["gun"])
+
+        if t["gun"]:
+            c.box(cx + sw, 36 + lead, cx + sw + 7, 39 + lead, t["gun"])
 
 
 def head(c, t, lean=0, hurt=False):
@@ -189,8 +216,14 @@ def head(c, t, lean=0, hurt=False):
 
     c.box(cx - 6, y - 7, cx + 6, y + 7, t["skin"])
     c.box(cx + 2, y - 7, cx + 6, y + 7, t["skin_lo"])
-    c.box(cx - 7, y - 9, cx + 7, y - 5, t["hat"])
-    c.box(cx - 8, y - 5, cx + 8, y - 3, t["hat_hi"])
+
+    if t["hat"]:
+        c.box(cx - 7, y - 9, cx + 7, y - 5, t["hat"])
+        c.box(cx - 8, y - 5, cx + 8, y - 3, t["hat_hi"])
+    else:
+        # cropped hair, nothing on his head
+        c.box(cx - 6, y - 8, cx + 6, y - 4, t["hair"])
+        c.box(cx - 6, y - 8, cx + 6, y - 7, lighten(t["hair"], 1.3))
 
     if t["visor"]:
         c.box(cx - 7, y - 3, cx + 7, y + 2, t["visor"])
@@ -209,12 +242,16 @@ def head(c, t, lean=0, hurt=False):
 def standing(c, t, frame):
     phase = {"walk1": 0, "walk2": 1, "walk3": 2, "walk4": 3}.get(frame, 1)
     lead = {"walk2": 1, "walk4": -1}.get(frame, 0)
-    aim = frame in ("aim", "fire")
+    mode = "hang"
+    if frame in ("aim", "fire"):
+        mode = "aim"
+    elif frame == "hit":
+        mode = "punch"
 
     shadow(c, t)
     legs(c, t, phase)
     torso(c, t)
-    arms(c, t, "aim" if aim else "hang", lead)
+    arms(c, t, mode, lead)
     head(c, t)
     c.outline()
 
@@ -308,8 +345,9 @@ def down(c, t):
     # head and cap, small, because he is lying down
     c.ellipse(8, 46, 20, 57, t["skin"])
     c.ellipse(8, 50, 15, 57, t["skin_lo"])
-    c.box(6, 44, 19, 49, t["hat"])
-    c.box(6, 44, 19, 45, lighten(t["hat"], 1.25))
+    cap = t["hat"] or t["hair"]
+    c.box(6, 44, 19, 49, cap)
+    c.box(6, 44, 19, 45, lighten(cap, 1.25))
 
     if t["visor"]:
         c.box(8, 49, 17, 52, darken(t["visor"], 0.75))
@@ -395,6 +433,8 @@ def draw(tier, frame):
 
     if frame in ("die1", "die2", "die3"):
         step = {"die1": 0.3, "die2": 0.65, "die3": 0.92}[frame]
+        if tier == "con":
+            step = 0.55
 
         return falling(Cell(), t, step).im
 
@@ -412,5 +452,9 @@ if __name__ == "__main__":
         for frame in FRAMES:
             draw(tier, frame).save("%s/%s.%s.png" % (out, tier, frame))
             n += 1
+
+    for frame in CON_FRAMES:
+        draw("con", frame).save("%s/con.%s.png" % (out, frame))
+        n += 1
 
     print("%d files written to %s" % (n, out))

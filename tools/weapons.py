@@ -31,6 +31,11 @@ GUN_LO = (38, 38, 43)
 WOOD = (82, 54, 33)
 WOOD_HI = (117, 79, 47)
 BLOOD = (148, 13, 15)
+
+# Dried, not fresh. The guard who came into the cell is an hour behind you
+# and it is still on your hands.
+DRIED = (112, 26, 24, 205)
+DRIED_LO = (78, 17, 16, 190)
 EDGE = (16, 15, 18, 255)
 
 FRAMES = {"hatchet": 2, "revolver": 4, "uzi": 4, "launcher": 2,
@@ -113,6 +118,16 @@ def fists(v, spread=0):
 
     v.rect(-32 - spread, cy + 10, 64 + spread * 2, 14, CUFF)
     v.rect(-32 - spread, cy + 10, 64 + spread * 2, 3, CUFF_HI)
+
+    # what is left of the guard, across the knuckles and down one cuff
+    v.rect(-13, cy - 33, 11, 4, DRIED)
+    v.rect(-4, cy - 29, 5, 2, DRIED_LO)
+    v.rect(2, cy - 24, 8, 3, DRIED)
+    v.rect(-11, cy - 15, 6, 2, DRIED_LO)
+    v.rect(-26 - spread, cy - 6, 5, 7, DRIED)
+    v.rect(-24 - spread, cy + 2, 3, 4, DRIED_LO)
+    v.rect(16 + spread, cy - 2, 4, 5, DRIED_LO)
+    v.rect(-20 - spread, cy + 11, 7, 3, DRIED_LO)
 
 
 def flash(v, x, y, s=1.0, quiet=False):
@@ -254,6 +269,10 @@ def thrower(v, frame, ball):
             v.rect(-15, -152 + i * 9, 30, 6, SKIN)
             v.rect(-15, -147 + i * 9, 30, 2, SKIN_LO)
         v.disc(-15, -136, 7, SKIN_LO)
+        v.rect(-14, -150, 10, 4, DRIED)
+        v.rect(-6, -144, 6, 3, DRIED_LO)
+        v.rect(-14, -120, 5, 9, DRIED)
+        v.rect(2, -104, 4, 6, DRIED_LO)
         v.outline()
 
         return
@@ -265,6 +284,9 @@ def thrower(v, frame, ball):
     v.rect(-18, -34, 5, 44, SKIN_HI)
     v.disc(-16, -34, 11, SKIN)
     v.disc(16, -34, 11, SKIN_LO)
+    v.rect(-16, -30, 9, 4, DRIED)
+    v.rect(-4, -22, 6, 3, DRIED_LO)
+    v.rect(8, -34, 5, 6, DRIED)
     v.rect(-18, 2, 36, 14, CUFF)
     v.rect(-18, 2, 36, 3, CUFF_HI)
     v.outline()
@@ -337,6 +359,10 @@ def grip_hand(v, x, y, rot, s=1.0):
     v.disc(0, 0, 17, (224, 179, 140))
     for i in range(3):
         v.rect(-16, -12 + i * 9, 32, 6, (173, 128, 97))
+
+    v.rect(-15, -10, 12, 5, DRIED)
+    v.rect(-2, 0, 9, 4, DRIED_LO)
+    v.rect(-14, 16, 7, 9, DRIED)
 
 
 def splatter(v, n, sx, sy, spread, size):

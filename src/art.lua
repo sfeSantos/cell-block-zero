@@ -645,7 +645,26 @@ function props.remains()
     disc(36, 59, 3, {0.46, 0.08, 0.09, 0.9})
 end
 
-art.PROP_ORDER = {"skeleton", "hanged", "body", "remains"}
+-- Dried blood on the floor, on its own with nobody left beside it. It cannot
+-- live in the floor texture: that one tile is painted on the whole block, so
+-- a stain in the file would run the length of every corridor. The world lays
+-- these down tile by tile instead.
+function props.stain()
+    disc(30, 55, 16, GORE_THIN)
+    disc(43, 58, 10, GORE_THIN)
+    disc(19, 59, 8, GORE_THIN)
+    disc(31, 56, 10, GORE)
+    disc(39, 60, 6, GORE)
+    disc(23, 61, 5, GORE)
+
+    -- the spots that flew out of it and dried on their own
+    for _, p in ipairs({{10, 52, 2}, {52, 54, 2}, {46, 50, 1}, {15, 62, 2},
+        {56, 61, 1}, {36, 48, 1}}) do
+        disc(p[1], p[2], p[3], GORE_THIN)
+    end
+end
+
+art.PROP_ORDER = {"skeleton", "hanged", "body", "remains", "stain"}
 
 -- The guard on your cell floor, which is where the hatchet, the revolver and
 -- the vest came from. Drawn from the sergeant's own dead frame so it is the

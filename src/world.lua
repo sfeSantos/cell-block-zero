@@ -122,12 +122,61 @@ function World.load(path, difficulty, carry, audio)
     self:stockLockers()
     self:spreadGuards()
     self:placeKeys()
+    self:scatterStains()
 
     nav.build(self.field, level, math.floor(self.player.x) + 1, math.floor(self.player.y) + 1)
     self:message("Space opens doors, lockers and the exit")
     self:message("[ and ] set the mouse speed")
 
     return self
+end
+
+-- Blood on the floor, dropped on a handful of tiles rather than painted into
+-- the floor art, which repeats on every tile of the block. The draw is seeded
+-- off the name of the level, so a block looks the same every time you come
+-- back to it and no two blocks look alike.
+function World:scatterStains()
+    local level = self.level
+    local seed = 2166136261
+
+    for i = 1, #level.name do
+        seed = (seed * 31 + level.name:byte(i)) % 2147483647
+    end
+
+    local rng = love.math.newRandomGenerator(seed)
+    local free = {}
+
+    for cy = 1, level.h do
+        for cx = 1, level.w do
+            local i = level:index(cx, cy)
+            if not level.wall[i] and not level.door[i] and not level.exit[i]
+                and not level.locker[i] then
+                free[#free + 1] = {cx, cy}
+            end
+        end
+    end
+
+    local used = {}
+    local spawn = level:index(math.floor(level.spawn.x) + 1, math.floor(level.spawn.y) + 1)
+    local want = math.min(#free, math.floor(#free / 70) + 3)
+    local tries = 0
+
+    while want > 0 and tries < 400 do
+        tries = tries + 1
+        local t = free[rng:random(#free)]
+        local i = level:index(t[1], t[2])
+
+        if not used[i] and i ~= spawn then
+            used[i] = true
+            want = want - 1
+            self.props[#self.props + 1] = {
+                prop = "stain",
+                x = t[1] - 0.8 + rng:random() * 0.6,
+                y = t[2] - 0.8 + rng:random() * 0.6,
+                size = 0.55 + rng:random() * 0.5,
+            }
+        end
+    end
 end
 
 function World:stockLockers()
@@ -1081,7 +1130,7 @@ function World:collectSprites(out)
             x = prop.x,
             y = prop.y,
             z = 0,
-            size = 1,
+            size = prop.size or 1,
         }
     end
 

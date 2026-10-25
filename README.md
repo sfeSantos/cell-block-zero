@@ -2,9 +2,11 @@
 
 A prison break in the shape of the first Wolfenstein 3D, written in Lua for
 [LÖVE](https://love2d.org/) 11.x. One ray per screen column, billboard sprites,
-text files for levels. No assets: the wall textures are written pixel by pixel
-at startup, the guards and the weapons are drawn into a canvas, the sounds are
-synthesised.
+text files for levels. Everything is drawn in code at startup: the walls and
+the ground are written pixel by pixel into an atlas, the guards and the
+weapons into a canvas, and every sound is synthesised. The art files in
+`assets/` are painted over that when the game loads, and the game runs the
+same with the folder empty.
 
 Lights out an hour ago, and the guard who let himself into your cell was not
 there to talk. He is still on the floor of it, and everything you own came
@@ -372,7 +374,7 @@ anything made from it, is not allowed.
 | `main.lua` | love callbacks, menu, the run through the blocks |
 | `src/level.lua` | reads a level file, doors, line of sight, the ray cast |
 | `src/raycaster.lua` | the 3D view: walls, sprites, the depth buffer |
-| `src/textures.lua` | wall textures, written pixel by pixel into one atlas |
+| `src/textures.lua` | wall, door and ground textures, pixel by pixel into one atlas |
 | `src/art.lua` | guards, pickups, explosions, the weapon in your hands |
 | `src/world.lua` | one level being played, and everything in it |
 | `src/player.lua` | movement, weapons, pickups, the executions |
@@ -380,6 +382,8 @@ anything made from it, is not allowed.
 | `src/enemy.lua` | the guards: senses, rounds, fighting, dying |
 | `src/nav.lua` | the shared distance field, cover and flank queries |
 | `src/projectile.lua` | rockets and grenades |
+| `assets/` | art painted over what the code draws, see its own README |
+| `tools/` | the Python scripts that drew what is in `assets/` |
 | `src/fx.lua` | blood, sparks, smoke, fireballs |
 | `src/hud.lua` | status bar, map, menus |
 | `src/audio.lua` | generated sound effects |
