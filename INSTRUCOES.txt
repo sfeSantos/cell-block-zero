@@ -73,7 +73,12 @@ everything goes back to the way it comes out of the box.
   Cheats                      F3 god, F4 invisible, F5 endless ammunition
   Mouse diagnostics           F6
   Fullscreen                  F11
-  Back to the menu            escape
+  Back to the menu            escape, and the block waits for you there
+
+Escape puts the block on hold and goes out to the menu. Nothing is lost: the
+menu grows a line at the top, Carry on, which drops you back exactly where
+you were, and escape again at the menu does the same. The clock on the end of
+level screen stops while you are out there.
 
 The pointer belongs to the game while a block is being played and comes back
 when you pause, open the menu, open the console or leave the window.

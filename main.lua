@@ -109,6 +109,7 @@ local function loadLevel(path, carry)
     entryCarry = carry
     endT = 0
     state = "briefing"
+    hud.setResume(false)
     grabMouse(false)
 
     return true
@@ -199,11 +200,59 @@ local function cheat(name)
     world.audio.play("click", 0.4)
 end
 
+-- The clock is only running while the block is. Standing in the menu, or
+-- paused, costs nothing on the time at the end.
+local pausedAt
+
+local function holdClock()
+    pausedAt = pausedAt or love.timer.getTime()
+end
+
+local function releaseClock()
+    if pausedAt and startTime then
+        startTime = startTime + (love.timer.getTime() - pausedAt)
+    end
+
+    pausedAt = nil
+end
+
 local function beginPlay()
     applyMouse()
     state = "play"
     paused = false
+    pausedAt = nil
     startTime = love.timer.getTime()
+    grabMouse(true)
+end
+
+-- Out to the menu with the block left exactly as it is, and back into it from
+-- the line the menu grows at the top.
+local function toMenu(keep)
+    state = "menu"
+    grabMouse(false)
+    hud.setResume(keep and world ~= nil)
+
+    if keep then
+        paused = true
+        menuSel = 1
+        holdClock()
+    else
+        world = nil
+        paused = false
+    end
+
+    menuSel = math.min(menuSel, hud.menuCount)
+end
+
+local function carryOn()
+    if not world then
+        return
+    end
+
+    applyMouse()
+    state = "play"
+    paused = false
+    releaseClock()
     grabMouse(true)
 end
 
@@ -499,9 +548,12 @@ function love.mousepressed(x, y, button)
         if button == 1 then
             local w, h = love.graphics.getDimensions()
             local hit = hud.menuHit(x, y, w, h)
+
             if hit then
                 menuSel = hit
                 menuPick()
+            elseif hud.linkHit(x, y) and love.system then
+                love.system.openURL(hud.URL)
             end
         end
 
@@ -518,8 +570,7 @@ function love.mousepressed(x, y, button)
 
     if state == "win" then
         if button == 1 then
-            state = "menu"
-            world = nil
+            toMenu(false)
         end
 
         return
@@ -550,19 +601,36 @@ function love.mousepressed(x, y, button)
     end
 end
 
+local MENU_ACTIONS = {"start", "block", "difficulty", "pointer", "turn",
+    "vertical", "sens", "range", "controls", "quit"}
+
+local function menuAction(i)
+    if hud.resume then
+        if i == 1 then
+            return "carryon"
+        end
+
+        i = i - 1
+    end
+
+    return MENU_ACTIONS[i]
+end
+
 function menuMove(d)
-    if menuSel == 2 then
+    local what = menuAction(menuSel)
+
+    if what == "block" then
         cfg.block = (cfg.block - 1 + d) % saved.unlocked + 1
-    elseif menuSel == 3 then
+    elseif what == "difficulty" then
         cfg.difficulty = (cfg.difficulty - 1 + d) % #World.DIFFICULTY + 1
-    elseif menuSel == 4 then
+    elseif what == "pointer" then
         cfg.pointerMode = cfg.pointerMode == 1 and 0 or 1
-    elseif menuSel == 5 then
+    elseif what == "turn" then
         cfg.invertX = -cfg.invertX
-    elseif menuSel == 6 then
+    elseif what == "vertical" then
         local order = {[1] = -1, [-1] = 0, [0] = 1}
         cfg.invertY = order[cfg.invertY] or 1
-    elseif menuSel == 7 then
+    elseif what == "sens" then
         cfg.sens = math.max(1, math.min(#Player.SENSITIVITY, cfg.sens + d))
     end
 
@@ -576,16 +644,20 @@ function menuMove(d)
 end
 
 function menuPick()
-    if menuSel == 1 then
+    local what = menuAction(menuSel)
+
+    if what == "carryon" then
+        carryOn()
+    elseif what == "start" then
         loadLevel(LEVELS[math.min(cfg.block, saved.unlocked)], nil)
-    elseif menuSel >= 2 and menuSel <= 7 then
-        menuMove(1)
-    elseif menuSel == 8 then
+    elseif what == "range" then
         loadLevel(RANGE, nil)
-    elseif menuSel == 9 then
+    elseif what == "controls" then
         showControls = true
-    else
+    elseif what == "quit" then
         love.event.quit()
+    else
+        menuMove(1)
     end
 end
 
@@ -668,7 +740,11 @@ function love.keypressed(key)
         elseif key == "return" or key == "kpenter" or key == "space" then
             menuPick()
         elseif key == "escape" then
-            love.event.quit()
+            if hud.resume then
+                carryOn()
+            else
+                love.event.quit()
+            end
         end
 
         return
@@ -686,8 +762,7 @@ function love.keypressed(key)
 
     if state == "win" then
         if key == "return" or key == "kpenter" or key == "escape" then
-            state = "menu"
-            world = nil
+            toMenu(false)
         end
 
         return
@@ -697,16 +772,14 @@ function love.keypressed(key)
         if key == "return" or key == "kpenter" then
             loadLevel(entryPath, entryCarry)
         elseif key == "escape" then
-            state = "menu"
-            world = nil
+            toMenu(false)
         end
 
         return
     end
 
     if key == "escape" then
-        state = "menu"
-        grabMouse(false)
+        toMenu(true)
 
         return
     end
@@ -714,6 +787,12 @@ function love.keypressed(key)
     if key == "p" then
         paused = not paused
         grabMouse(not paused)
+
+        if paused then
+            holdClock()
+        else
+            releaseClock()
+        end
 
         return
     end

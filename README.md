@@ -75,7 +75,14 @@ everything back to the way it comes out of the box.
 | Cheats | F3 god, F4 invisible, F5 endless ammunition |
 | Map on and off | tab |
 | Pause | P |
-| Fullscreen, controls, menu | F11, F1, escape |
+| Menu, with the block left as it is | escape |
+| Fullscreen, controls | F11, F1 |
+
+Escape puts the block on hold and goes out to the menu. The block is kept
+exactly as it was, and the menu grows a line at the top, `Carry on`, that
+drops you back into it where you left off. Escape again from the menu does the
+same thing. The clock on the end of level screen does not run while you are
+out there.
 
 The menu works with the mouse as well as the keyboard: the line under the
 pointer is the selected one, a click runs it, and clicking a setting cycles it.

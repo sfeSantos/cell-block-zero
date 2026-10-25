@@ -441,10 +441,33 @@ local MENU = {"Break out", "Block", "Difficulty", "Mouse input", "Turn",
 
 local MENU_TOP, MENU_STEP = 0.28, 34
 
+hud.LINK = "github.com/sfeSantos/cell-block-zero"
+hud.URL = "https://github.com/sfeSantos/cell-block-zero"
+
+-- When a block is halfway through, the menu grows a line at the top that
+-- drops you back into it where you left off.
+local function items()
+    if not hud.resume then
+        return MENU
+    end
+
+    local list = {"Carry on"}
+    for _, item in ipairs(MENU) do
+        list[#list + 1] = item
+    end
+
+    return list
+end
+
+function hud.setResume(on)
+    hud.resume = on and true or false
+    hud.menuCount = #items()
+end
+
 -- Which menu line the pointer is over, so the menu can be used with the mouse.
 function hud.menuHit(mx, my, w, h)
     local y0 = h * MENU_TOP
-    for i = 1, #MENU do
+    for i = 1, #items() do
         local top = y0 + (i - 1) * MENU_STEP
         if my >= top - 5 and my < top + MENU_STEP - 5 then
             return i
@@ -468,19 +491,21 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
         0, h * 0.16 + 56, w, "center")
 
     local y = h * MENU_TOP
-    for i, item in ipairs(MENU) do
+    for i, item in ipairs(items()) do
         local text = item
-        if i == 2 then
+        local k = hud.resume and i - 1 or i
+
+        if k == 2 then
             text = string.format("%s:  %d of %d, %s", item, cfg.block, #names,
                 names[cfg.block] or "?")
-        elseif i == 3 then
+        elseif k == 3 then
             text = item .. ":  " .. World.DIFFICULTY[cfg.difficulty].name
-        elseif i == 4 then
+        elseif k == 4 then
             text = item .. ":  " .. (cfg.pointerMode == 1 and "pointer, edge turns"
                 or "automatic")
-        elseif i == 5 then
+        elseif k == 5 then
             text = item .. ":  " .. (cfg.invertX > 0 and "normal" or "reversed")
-        elseif i == 6 then
+        elseif k == 6 then
             local look = "normal"
             if cfg.invertY > 0 then
                 look = "inverted"
@@ -489,7 +514,7 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
             end
 
             text = item .. ":  " .. look
-        elseif i == 7 then
+        elseif k == 7 then
             text = string.format("%s:  %d of %d", item, cfg.sens,
                 #Player.SENSITIVITY)
         end
@@ -519,7 +544,26 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
 
     setColor(0.40, 0.42, 0.46)
     love.graphics.printf("arrows to choose, enter to pick, F1 for the controls",
-        0, h - 40, w, "center")
+        0, h - 44, w, "center")
+
+    -- whose fault all this is, and where it lives
+    local note = "made by Eduardo Santos      " .. hud.LINK
+    local tw = fonts.small:getWidth(note)
+    local tx, ty = math.floor((w - tw) * 0.5), math.floor(h - 24)
+    hud.linkBox = {tx, ty, tw, 16}
+    setColor(0.38, 0.40, 0.44)
+    love.graphics.print(note, tx, ty)
+end
+
+-- The note at the bottom of the menu opens the repository when it is clicked.
+function hud.linkHit(mx, my)
+    local box = hud.linkBox
+    if not box then
+        return false
+    end
+
+    return mx >= box[1] and mx < box[1] + box[3]
+        and my >= box[2] and my < box[2] + box[4]
 end
 
 function hud.drawBriefing(level, w, h, index, total)
@@ -593,7 +637,8 @@ function hud.drawPause(w, h)
     love.graphics.printf("PAUSED", 0, h * 0.44, w, "center")
     love.graphics.setFont(fonts.small)
     setColor(0.50, 0.52, 0.56)
-    love.graphics.printf("P to carry on, escape for the menu", 0, h * 0.44 + 40, w, "center")
+    love.graphics.printf("P to carry on, escape for the menu, which keeps the block as it is",
+        0, h * 0.44 + 40, w, "center")
 end
 
 local CONTROLS = {
@@ -618,7 +663,7 @@ local CONTROLS = {
     {"set a trap", "B, on the floor in front of you"},
     {"silencer on and off", "T, or the middle mouse button"},
     {"map on and off", "tab"},
-    {"pause", "P"},
+    {"pause", "P, or escape for the menu and Carry on to come back"},
     {"developer console", "F2 or the tilde key, then help"},
     {"cheats", "F3 god, F4 invisible, F5 endless ammunition"},
     {"fullscreen", "F11"},
