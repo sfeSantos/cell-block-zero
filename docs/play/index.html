@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cell Block Zero, in the browser</title>
+<meta name="description" content="Cell Block Zero running in the browser: LOVE 11.4 built for WebAssembly, with the whole game in one .love the page hands over at startup.">
+<style>
+:root {
+    --ink: #e7e3d8;
+    --dim: #9a958a;
+    --bg: #15161a;
+    --panel: #1d1f24;
+    --line: #2b2e35;
+    --hot: #e0b341;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+a { color: var(--hot); }
+
+.wrap { width: 100%; max-width: 1064px; padding: 22px 20px 50px; }
+
+h1 {
+    margin: 0 0 4px;
+    font: 700 26px/1.1 ui-monospace, "Consolas", monospace;
+    letter-spacing: -0.5px;
+}
+
+h1 span { color: var(--hot); }
+
+.sub { margin: 0 0 18px; color: var(--dim); font-size: 14.5px; }
+
+/* The stage keeps the shape of the window the game asks for, 1024 by 640,
+   and the canvas is blown up to it with no smoothing. */
+.stage {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #0a0a0c;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0c;
+    image-rendering: pixelated;
+    outline: none;
+}
+
+.stage:fullscreen { aspect-ratio: auto; width: 100%; height: 100%; border: 0; }
+
+.stage:fullscreen canvas { object-fit: contain; }
+
+.cover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    padding: 24px;
+    background: rgba(12, 12, 14, 0.88);
+}
+
+.cover h2 {
+    margin: 0;
+    font: 700 34px/1.1 ui-monospace, "Consolas", monospace;
+    letter-spacing: -1px;
+    color: #e9e4d2;
+}
+
+.cover h2 span { color: var(--hot); }
+
+.cover p { margin: 0; max-width: 34em; color: var(--dim); font-size: 14.5px; }
+
+button {
+    font: 600 14px ui-monospace, "Consolas", monospace;
+    padding: 11px 20px;
+    border: 1px solid var(--hot);
+    border-radius: 3px;
+    background: var(--hot);
+    color: #17181c;
+    cursor: pointer;
+}
+
+button:hover { background: #f0c454; }
+
+button.ghost { background: var(--panel); border-color: var(--line); color: var(--ink); }
+
+button.ghost:hover { border-color: var(--hot); color: var(--hot); }
+
+#status { min-height: 1.6em; color: var(--hot); font: 600 13px ui-monospace, monospace; }
+
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 14px 0 0;
+    font-size: 14px;
+    color: var(--dim);
+}
+
+.bar .fill { flex: 1 1 auto; }
+
+.keys {
+    margin: 26px 0 0;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--panel);
+    padding: 16px 18px;
+}
+
+.keys h3 {
+    margin: 0 0 10px;
+    font: 700 12px ui-monospace, "Consolas", monospace;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    color: var(--hot);
+}
+
+.keys dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 11em 1fr;
+    gap: 4px 14px;
+    font-size: 14.5px;
+}
+
+.keys dt { color: var(--ink); font-family: ui-monospace, monospace; font-size: 13px; }
+
+.keys dd { margin: 0; color: var(--dim); }
+
+.note { margin: 22px 0 0; color: var(--dim); font-size: 13.5px; max-width: 54em; }
+
+@media (max-width: 620px) {
+    .keys dl { grid-template-columns: 1fr; gap: 0 0; }
+    .keys dd { margin: 0 0 8px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cell Block <span>Zero</span></h1>
+<p class="sub">LÖVE 11.4 built for WebAssembly. The game is the same .love
+file the desktop runs, about 400 KB, and the engine around it is 5 MB.</p>
+
+<div class="stage" id="stage">
+    <canvas id="canvas" width="1024" height="640" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <div class="cover" id="cover">
+        <h2>CELL BLOCK <span>ZERO</span></h2>
+        <p>A dead guard on your cell floor, and until sunrise to be gone.
+        Sound and the mouse both need a click to start, so the block waits
+        here until you ask for it.</p>
+        <button id="go">Enter the block</button>
+        <div id="status"></div>
+    </div>
+</div>
+
+<p class="bar">
+    <span class="fill">Click the picture to take the mouse. Escape gives it
+    back and holds the block at the menu.</span>
+    <button class="ghost" id="full">Fullscreen</button>
+</p>
+
+<div class="keys">
+    <h3>Keys</h3>
+    <dl>
+        <dt>W A S D</dt><dd>walk and strafe</dd>
+        <dt>mouse</dt><dd>look, left button shoots</dd>
+        <dt>shift</dt><dd>run</dd>
+        <dt>ctrl</dt><dd>crouch</dd>
+        <dt>space</dt><dd>open doors, lockers and panels, pick things up</dd>
+        <dt>1 to 6</dt><dd>fists, knife, pistol, machine pistol, rifle, grenade</dd>
+        <dt>right button</dt><dd>throw a grenade, middle button screws the silencer on</dd>
+        <dt>tab</dt><dd>the map</dd>
+        <dt>escape</dt><dd>the menu, and back into the block from it</dd>
+        <dt>F1</dt><dd>the full list of controls</dd>
+        <dt>F9</dt><dd>save, and the menu loads it back</dd>
+    </dl>
+</div>
+
+<p class="note">The browser keeps the save and the settings in its own
+storage for this page, so they survive a reload but do not follow you to
+another browser. Clearing site data for github.io clears them. A software
+raycaster in a browser runs slower than it does on the desktop, so for the
+real thing take the <a href="https://github.com/sfeSantos/cell-block-zero">code</a>
+and run it with LÖVE.</p>
+
+<p class="note">Built with <a href="https://github.com/Davidobot/love.js">love.js</a>.
+Back to the <a href="../">project page</a>.</p>
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var cover = document.getElementById("cover");
+    var status = document.getElementById("status");
+    var canvas = document.getElementById("canvas");
+    var stage = document.getElementById("stage");
+    var started = false;
+
+    function say(text) {
+        status.textContent = text || "";
+    }
+
+    // The keys the game plays on, kept away from the page underneath it.
+    var HELD = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+        "Tab", "F1", "F2", "F9"];
+
+    window.addEventListener("keydown", function (e) {
+        if (started && HELD.indexOf(e.code) > -1) {
+            e.preventDefault();
+        }
+    }, false);
+
+    document.getElementById("full").addEventListener("click", function (e) {
+        if (stage.requestFullscreen) {
+            stage.requestFullscreen();
+        } else if (stage.webkitRequestFullscreen) {
+            stage.webkitRequestFullscreen();
+        }
+
+        e.currentTarget.blur();
+        canvas.focus();
+    });
+
+    var Module = {
+        arguments: ["./game.love"],
+        INITIAL_MEMORY: 134217728,
+        canvas: canvas,
+        printErr: function () {
+            console.error.apply(console, arguments);
+        },
+        print: function (text) {
+            console.log(text);
+        },
+        setStatus: function (text) {
+            if (text) {
+                say(text);
+            }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function (left) {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+
+            if (left > 0) {
+                say("getting ready, " + (this.totalDependencies - left) + " of "
+                    + this.totalDependencies);
+            }
+        },
+        onRuntimeInitialized: function () {
+            cover.style.display = "none";
+            canvas.focus();
+        }
+    };
+
+    window.Module = Module;
+
+    canvas.addEventListener("webglcontextlost", function (e) {
+        e.preventDefault();
+        say("the browser dropped WebGL, reload the page");
+    }, false);
+
+    // love.js keeps the save directory on IndexedDB and writes it back when
+    // the page unloads, which is one event and not one to trust. Flush it on
+    // a timer as well, and whenever the tab goes away.
+    var flushing = false;
+
+    function flush() {
+        if (flushing || !Module.FS) {
+            return;
+        }
+
+        flushing = true;
+        Module.FS.syncfs(false, function (err) {
+            flushing = false;
+
+            if (err) {
+                console.error(err);
+            }
+        });
+    }
+
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") {
+            flush();
+        }
+    });
+
+    window.addEventListener("pagehide", flush);
+
+    // The game is a .love like any other, written into the engine's file
+    // system before it starts and read from there.
+    function boot(bytes) {
+        Module.preRun = [function () {
+            Module.FS_createDataFile("/", "game.love", bytes, true, true, false);
+        }];
+
+        var engine = document.createElement("script");
+        engine.src = "love.js";
+        engine.onload = function () {
+            started = true;
+            setInterval(flush, 10000);
+            Love(Module);
+        };
+        engine.onerror = function () {
+            say("love.js did not load");
+        };
+        document.body.appendChild(engine);
+    }
+
+    document.getElementById("go").addEventListener("click", function (e) {
+        e.currentTarget.disabled = true;
+        say("loading the block");
+
+        fetch("game.love").then(function (r) {
+            if (!r.ok) {
+                throw new Error("game.love: " + r.status);
+            }
+
+            return r.arrayBuffer();
+        }).then(function (buf) {
+            boot(new Uint8Array(buf));
+        }).catch(function (err) {
+            console.error(err);
+            say(String(err.message || err));
+        });
+    });
+})();
+</script>
+</body>
+</html>

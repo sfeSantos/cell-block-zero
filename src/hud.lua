@@ -439,7 +439,24 @@ end
 local MENU = {"Break out", "Block", "Difficulty", "Mouse input", "Turn",
     "Vertical look", "Mouse speed", "Shooting range", "Controls", "Quit"}
 
+-- A browser tab has its own way out, and quitting there would only leave a
+-- dead canvas behind, so the last line is dropped on the web build.
+if love._os == "Web" then
+    MENU[#MENU] = nil
+end
+
 local MENU_TOP, MENU_STEP = 0.28, 34
+
+-- Where the lines start and how far apart they sit. The menu grows lines
+-- when there is a block to carry on with and a game in the save file, and
+-- the window is not always a tall one, so both come out of the height: the
+-- list keeps clear of the title above it and of the notes along the bottom.
+local function geometry(h, count)
+    local top = math.max(h * MENU_TOP, h * 0.16 + 70)
+    local room = h - 92 - top
+
+    return top, math.min(MENU_STEP, math.max(20, math.floor(room / count)))
+end
 
 hud.LINK = "github.com/sfeSantos/cell-block-zero"
 hud.URL = "https://github.com/sfeSantos/cell-block-zero"
@@ -478,10 +495,12 @@ end
 
 -- Which menu line the pointer is over, so the menu can be used with the mouse.
 function hud.menuHit(mx, my, w, h)
-    local y0 = h * MENU_TOP
-    for i = 1, #items() do
-        local top = y0 + (i - 1) * MENU_STEP
-        if my >= top - 5 and my < top + MENU_STEP - 5 then
+    local list = items()
+    local y0, step = geometry(h, #list)
+
+    for i = 1, #list do
+        local top = y0 + (i - 1) * step
+        if my >= top - 5 and my < top + step - 5 then
             return i
         end
     end
@@ -502,8 +521,10 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
     love.graphics.printf("a dead guard on your cell floor, and until sunrise to be gone",
         0, h * 0.16 + 56, w, "center")
 
-    local y = h * MENU_TOP
-    for i, item in ipairs(items()) do
+    local list = items()
+    local y, step = geometry(h, #list)
+
+    for i, item in ipairs(list) do
         local text = item
         local k = i - #hud.extras
 
@@ -541,7 +562,7 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
             love.graphics.printf(text, 0, y + 4, w, "center")
         end
 
-        y = y + MENU_STEP
+        y = y + step
     end
 
     love.graphics.setFont(fonts.small)

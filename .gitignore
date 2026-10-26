@@ -1,6 +1,9 @@
 # the packed game, built from this folder
 *.love
 
+# except the one the browser build hands to love.js
+!docs/play/game.love
+
 # whatever the editor leaves behind
 *.swp
 .DS_Store

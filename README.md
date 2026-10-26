@@ -23,6 +23,34 @@ love .
 Or pack it: `zip -9 -r cellblockzero.love . -x '*.git*'` and run
 `love cellblockzero.love`.
 
+It also runs in a browser, with nothing to install:
+[sfesantos.github.io/cell-block-zero/play](https://sfesantos.github.io/cell-block-zero/play/).
+
+### In the browser
+
+`docs/play/` is the web build, served by GitHub Pages. The engine is
+[love.js](https://github.com/Davidobot/love.js), LÖVE 11.4 built for
+WebAssembly, and the game goes to it as the same `.love` file the desktop
+runs. To build it again after changing the game:
+
+```
+python3 tools/web.py
+```
+
+That packs `docs/play/game.love` and copies the page from
+`tools/web/index.html`. The first run also downloads `love.js` and
+`love.wasm` and keeps them there, so the page needs nothing else at run
+time. Open it over http, not from the file system, or the browser will
+refuse to fetch the game:
+
+```
+python3 -m http.server -d docs 8000
+```
+
+The browser keeps the save and the settings in its own storage for the page,
+one browser at a time. The window is the canvas, so it does not ask for
+fullscreen on its own and there is no Quit line in the menu.
+
 ### On Windows
 
 1. Install LÖVE 11.5 from [love2d.org](https://love2d.org/), the 64 bit
@@ -410,7 +438,8 @@ anything made from it, is not allowed.
 | `src/projectile.lua` | rockets and grenades |
 | `src/save.lua` | the saved game: the whole block written down and read back |
 | `assets/` | art painted over what the code draws, see its own README |
-| `tools/` | the Python scripts that drew what is in `assets/` |
+| `tools/` | the Python scripts that drew what is in `assets/`, and the web build |
+| `docs/` | the project page, and `docs/play/` the browser version |
 | `src/fx.lua` | blood, sparks, smoke, fireballs |
 | `src/hud.lua` | status bar, map, menus |
 | `src/audio.lua` | generated sound effects |

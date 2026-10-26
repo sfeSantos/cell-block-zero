@@ -14,4 +14,13 @@ function love.conf(t)
     t.modules.joystick = false
     t.modules.touch = false
     t.modules.video = false
+
+    -- In the browser the canvas is the window: a fullscreen request with no
+    -- click behind it is refused, and the page around it decides how big the
+    -- picture is. So take the size above as it is and let the page blow it
+    -- up from there.
+    if love._os == "Web" then
+        t.window.fullscreen = false
+        t.window.resizable = false
+    end
 end

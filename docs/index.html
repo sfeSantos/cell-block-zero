@@ -83,6 +83,20 @@ h1 span { color: var(--hot); }
 .links a.main { background: var(--hot); border-color: var(--hot); color: #17181c; }
 .links a.main:hover { background: #f0c454; color: #17181c; }
 
+a.play {
+    display: inline-block;
+    margin: 4px 0 10px;
+    padding: 12px 22px;
+    border: 1px solid var(--hot);
+    border-radius: 3px;
+    background: var(--hot);
+    color: #17181c;
+    text-decoration: none;
+    font: 700 15px ui-monospace, "Consolas", monospace;
+}
+
+a.play:hover { background: #f0c454; }
+
 section { padding: 56px 0 10px; }
 
 h2 {
@@ -183,7 +197,8 @@ footer {
     it runs the same with that folder empty. Three blocks, drawn in text
     files.</p>
     <p class="links">
-        <a class="main" href="https://github.com/sfeSantos/cell-block-zero">Code on GitHub</a>
+        <a class="main" href="play/">Play it here</a>
+        <a href="https://github.com/sfeSantos/cell-block-zero">Code on GitHub</a>
         <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/README.md">Read me</a>
         <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/INSTRUCOES.txt">The long manual</a>
     </p>
@@ -342,6 +357,22 @@ behind a section of wall that slides back.</p>
         yourself anything, or load the shooting range.</p>
     </div>
 </div>
+</section>
+
+<section>
+<h2>In the browser</h2>
+<p>The same game, nothing to install.</p>
+
+<p><a class="play" href="play/">Open the block</a></p>
+
+<p>LÖVE 11.4 built for WebAssembly with
+<a href="https://github.com/Davidobot/love.js">love.js</a>, and the game
+handed to it as the same <code>.love</code> file the desktop runs. About
+5 MB comes down on the first click and the browser keeps it after that. The
+save and the settings live in the browser's own storage for the page, so
+they survive a reload but stay in that browser. For the real thing, with
+the window the size of your screen, take the code below and run it with
+LÖVE.</p>
 </section>
 
 <section>

@@ -45,6 +45,27 @@ Settings and the blocks you have opened live in
 %APPDATA%\LOVE\prison-break-fps\progress.txt. Delete that file and
 everything goes back to the way it comes out of the box.
 
+IN A BROWSER, with nothing to install:
+
+  https://sfesantos.github.io/cell-block-zero/play/
+
+That is the same game built for WebAssembly with love.js, LOVE 11.4 compiled
+by Emscripten. The page downloads about 5 MB the first time and the browser
+keeps it. It runs in a fixed window of 1024 by 640 rather than fullscreen,
+the menu has no Quit line, and the save and the settings go into the
+browser's own storage for that page: they survive a reload, they do not
+follow you to another browser, and clearing the site data clears them.
+
+To build it again after changing the game:
+
+  python3 tools/web.py
+  python3 -m http.server -d docs 8000
+
+and open http://localhost:8000/play/. It has to be served over http: a page
+opened straight off the disk is not allowed to fetch the game file next to
+it. The first run of tools/web.py downloads the two engine files into
+docs/play/ and leaves them there.
+
 
 ------------------------------------------------------------------------------
 2. CONTROLS

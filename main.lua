@@ -32,6 +32,7 @@ local stats = {time = "0:00", kills = 0, takedowns = 0}
 local startTime = 0
 
 local RANGE = "levels/range.txt"
+local WEB = love._os == "Web"
 local menuMove, menuPick, refreshExtras
 
 local function indexOf(path)
@@ -713,6 +714,12 @@ end
 local MENU_ACTIONS = {"start", "block", "difficulty", "pointer", "turn",
     "vertical", "sens", "range", "controls", "quit"}
 
+-- hud.lua drops the Quit line in the browser, so the actions follow it. The
+-- two lists are read by the same index.
+if WEB then
+    MENU_ACTIONS[#MENU_ACTIONS] = nil
+end
+
 local function menuAction(i)
     local extras = hud.extras or {}
     if i <= #extras then
@@ -852,7 +859,7 @@ function love.keypressed(key)
         elseif key == "escape" then
             if hud.resume then
                 carryOn()
-            else
+            elseif not WEB then
                 love.event.quit()
             end
         end
