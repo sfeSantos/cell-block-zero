@@ -439,9 +439,11 @@ end
 local MENU = {"Break out", "Block", "Difficulty", "Mouse input", "Turn",
     "Vertical look", "Mouse speed", "Shooting range", "Controls", "Quit"}
 
+local WEB = love._os == "Web"
+
 -- A browser tab has its own way out, and quitting there would only leave a
 -- dead canvas behind, so the last line is dropped on the web build.
-if love._os == "Web" then
+if WEB then
     MENU[#MENU] = nil
 end
 
@@ -534,8 +536,16 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
         elseif k == 3 then
             text = item .. ":  " .. World.DIFFICULTY[cfg.difficulty].name
         elseif k == 4 then
-            text = item .. ":  " .. (cfg.pointerMode == 1 and "pointer, edge turns"
-                or "automatic")
+            local mode = cfg.pointerMode == 1 and "pointer, edge turns" or "automatic"
+
+            -- there is no edge turn in a browser: nothing there can move the
+            -- pointer back, so the view follows it only while it is over the
+            -- canvas
+            if WEB and cfg.pointerMode == 1 then
+                mode = "pointer, over the picture"
+            end
+
+            text = item .. ":  " .. mode
         elseif k == 5 then
             text = item .. ":  " .. (cfg.invertX > 0 and "normal" or "reversed")
         elseif k == 6 then

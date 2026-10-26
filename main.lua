@@ -477,6 +477,16 @@ local function holdMouse(dt)
         return
     end
 
+    -- A browser is a different animal and the rest of this does not apply to
+    -- it. The page cannot move the pointer, so there is no recentre to make,
+    -- and under pointer lock the pointer SDL keeps walks off to the edge of
+    -- the canvas on its own while the movement is already turning the view.
+    -- Turning again at the edge would pile a second turn on top of the first
+    -- one, and it would only stop when the hand went back the other way.
+    if WEB then
+        return
+    end
+
     -- the pointer is loose in the window: keep turning while it is parked
     -- against an edge, and try to drag it back to the middle
     local band = math.min(w, h) * EDGE_BAND
