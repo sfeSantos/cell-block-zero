@@ -161,7 +161,7 @@ button.ghost:hover { border-color: var(--hot); color: var(--hot); }
 
 <h1>Cell Block <span>Zero</span></h1>
 <p class="sub">LÖVE 11.4 built for WebAssembly. The game is the same .love
-file the desktop runs, about 400 KB, and the engine around it is 5 MB.</p>
+file the desktop runs, about 340 KB, and the engine around it is 5 MB.</p>
 
 <div class="stage" id="stage">
     <canvas id="canvas" width="1024" height="640" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
@@ -184,15 +184,15 @@ file the desktop runs, about 400 KB, and the engine around it is 5 MB.</p>
 <div class="keys">
     <h3>Keys</h3>
     <dl>
-        <dt>W A S D</dt><dd>walk and strafe</dd>
-        <dt>mouse</dt><dd>look, left button shoots</dd>
+        <dt>W and S, A and D</dt><dd>walk, and step sideways</dd>
+        <dt>the mouse</dt><dd>look around, left button fires, ctrl does the same</dd>
         <dt>shift</dt><dd>run</dd>
-        <dt>ctrl</dt><dd>crouch</dd>
-        <dt>space</dt><dd>open doors, lockers and panels, pick things up</dd>
-        <dt>1 to 6</dt><dd>fists, knife, pistol, machine pistol, rifle, grenade</dd>
-        <dt>right button</dt><dd>throw a grenade, middle button screws the silencer on</dd>
+        <dt>space</dt><dd>doors, lockers, wall panels, prisoners, the way out</dd>
+        <dt>1 to 7</dt><dd>hatchet, revolver, uzi, launcher, grenade, flash, knife</dd>
+        <dt>G, F, R, B</dt><dd>throw a grenade, a flash, a knife, set a trap</dd>
+        <dt>T</dt><dd>silencer on and off, middle mouse button does it too</dd>
         <dt>tab</dt><dd>the map</dd>
-        <dt>escape</dt><dd>the menu, and back into the block from it</dd>
+        <dt>P, escape</dt><dd>pause, and the menu with Carry on to come back</dd>
         <dt>F1</dt><dd>the full list of controls</dd>
         <dt>F9</dt><dd>save, and the menu loads it back</dd>
     </dl>
@@ -200,10 +200,10 @@ file the desktop runs, about 400 KB, and the engine around it is 5 MB.</p>
 
 <p class="note">The browser keeps the save and the settings in its own
 storage for this page, so they survive a reload but do not follow you to
-another browser. Clearing site data for github.io clears them. A software
-raycaster in a browser runs slower than it does on the desktop, so for the
-real thing take the <a href="https://github.com/sfeSantos/cell-block-zero">code</a>
-and run it with LÖVE.</p>
+another browser, and clearing site data for github.io clears them. The
+window is fixed here, where the desktop build opens on the whole screen:
+the <a href="https://github.com/sfeSantos/cell-block-zero">code</a> and
+LÖVE will do that.</p>
 
 <p class="note">Built with <a href="https://github.com/Davidobot/love.js">love.js</a>.
 Back to the <a href="../">project page</a>.</p>
