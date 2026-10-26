@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cell Block Zero</title>
-<meta name="description" content="A prison break in the shape of the first Wolfenstein 3D, written in Lua for LOVE 11.x with no asset files at all.">
+<meta name="description" content="A prison break in the shape of the first Wolfenstein 3D, written in Lua for LOVE 11.x, with everything drawn in code at startup.">
 <meta property="og:title" content="Cell Block Zero">
-<meta property="og:description" content="A prison break in the shape of the first Wolfenstein 3D. No asset files: every texture, sprite and sound is generated at startup.">
+<meta property="og:description" content="A prison break in the shape of the first Wolfenstein 3D. Every texture, sprite and sound is generated at startup, and the art files are painted over the top.">
 <meta property="og:image" content="shots/corridor.png">
 <style>
 :root {
@@ -20,6 +20,15 @@
 }
 
 * { box-sizing: border-box; }
+
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    color: var(--hot);
+    background: rgba(224, 179, 65, 0.09);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
 
 body {
     margin: 0;
@@ -167,10 +176,12 @@ footer {
 <div class="wrap">
     <h1>Cell Block <span>Zero</span></h1>
     <p class="tag">A prison break in the shape of the first Wolfenstein 3D,
-    written in Lua for LÖVE 11.x. <b>No asset files at all:</b> every wall
-    texture is written pixel by pixel at startup, every sprite and every
-    first person weapon is drawn into a canvas, and every sound is
-    synthesised. Three blocks, drawn in text files.</p>
+    written in Lua for LÖVE 11.x. <b>Everything is drawn in code:</b> the
+    walls and the ground pixel by pixel at startup, every sprite and every
+    first person weapon into a canvas, every sound synthesised. The art that
+    ships in <code>assets/</code> is painted over that as the game loads, and
+    it runs the same with that folder empty. Three blocks, drawn in text
+    files.</p>
     <p class="links">
         <a class="main" href="https://github.com/sfeSantos/cell-block-zero">Code on GitHub</a>
         <a href="https://github.com/sfeSantos/cell-block-zero/blob/main/README.md">Read me</a>
@@ -298,10 +309,11 @@ behind a section of wall that slides back.</p>
 <h2>What is in it</h2>
 <div class="cards">
     <div class="card">
-        <h3>Nothing on disk</h3>
-        <p>No images, no sound files. Textures are written pixel by pixel,
-        sprites are drawn into a canvas, sounds are synthesised at
-        startup.</p>
+        <h3>Drawn in code, art optional</h3>
+        <p>Walls, ground, sprites, weapons and sounds are all made at
+        startup, pixel by pixel. Files in <code>assets/</code> are painted
+        over the top of that, one frame at a time, and nothing there is
+        required.</p>
     </div>
     <div class="card">
         <h3>Guards with a brain</h3>
