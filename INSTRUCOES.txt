@@ -68,6 +68,7 @@ everything goes back to the way it comes out of the box.
   Map on and off              tab
   Look up and down            mouse, page up and page down, home to centre
   Pause                       P
+  Save the block as it is     F9, or the line in the menu
   Controls on screen          F1
   Developer console           F2, or the tilde key
   Cheats                      F3 god, F4 invisible, F5 endless ammunition
@@ -79,6 +80,13 @@ Escape puts the block on hold and goes out to the menu. Nothing is lost: the
 menu grows a line at the top, Carry on, which drops you back exactly where
 you were, and escape again at the menu does the same. The clock on the end of
 level screen stops while you are out there.
+
+SAVING. F9 writes the block to the save file exactly as it stands: everybody
+where they are, what is on the floor, which doors and lockers are open, what
+you carry and how long you have been at it. The same thing is on a line in the
+menu while a block is in progress, and the line at the top of the menu, Load
+the saved game, takes you back into it. There is one slot and the newest save
+is what is in it. The file sits next to progress.txt in the save directory.
 
 Walking out of a block stops at a page that adds it up before the next one
 starts: the time it took, each rank with how many went down out of how many
@@ -269,9 +277,13 @@ The revolver and the uzi share one pool of bullets.
 Carrying limits: 150 bullets, 20 rockets, 9 grenades, 6 flash grenades.
 
 THE SILENCER is a pickup. Once you have it, T fits it to the revolver or the
-uzi and takes it off again. A fitted can costs fifteen percent of the damage
-and most of the noise, and it is the difference between killing one guard and
-fighting the whole wing. The status bar says "+ can" when it is on.
+uzi and takes it off again. A fitted can costs most of the noise and nothing
+at all in damage. What it buys is the shot nobody is expecting: against a
+guard who has not seen you it hits for well over twice as much, so one round
+from the revolver drops him, and a man asleep in his chair never wakes up.
+Once he is fighting back it does exactly what the loud round does. It is the
+difference between killing one guard and fighting the whole wing. The status
+bar says "+ can" when it is on.
 
 
 ------------------------------------------------------------------------------
@@ -698,6 +710,7 @@ An example, the smallest level that works:
   src/weapons.lua       what the player can carry
   src/enemy.lua         the guards: senses, rounds, fighting, dying
   src/nav.lua           the shared distance field, paths, cover and flanking
+  src/save.lua          the saved game, written down and read back
   src/projectile.lua    rockets and grenades
   src/fx.lua            blood, sparks, smoke, fireballs
   src/hud.lua           status bar, map, menus

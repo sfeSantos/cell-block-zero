@@ -749,7 +749,9 @@ function World:impactNear(x, y, angle)
     self.audio.play("whiz", 0.3)
 end
 
-function World:hitscan(x, y, angle, range, damage, owner)
+-- quiet says the shot came out of a silencer, which only matters to somebody
+-- who has not noticed you yet.
+function World:hitscan(x, y, angle, range, damage, owner, quiet)
     local dx, dy = math.cos(angle), math.sin(angle)
     local wall = self.level:cast(x, y, dx, dy, range)
     local limit = math.min(range, wall)
@@ -782,6 +784,11 @@ function World:hitscan(x, y, angle, range, damage, owner)
     end
 
     if best then
+        if quiet and best.unaware and best:unaware() then
+            damage = best.asleep and best.hp + 1
+                or damage * weapons.QUIET_SURPRISE
+        end
+
         self:tracer(x, y, angle, bestT)
         best:hurt(damage, self, x, y)
         self.audio.play("flesh", 0.35)

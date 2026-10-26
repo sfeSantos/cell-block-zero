@@ -106,8 +106,11 @@ for i, w in ipairs(weapons.list) do
     weapons.slotOf[w.id] = i
 end
 
--- A can on the barrel costs a little punch and most of the noise.
-weapons.QUIET_DAMAGE = 0.85
+-- A can on the barrel costs the noise and nothing else. What it buys is the
+-- shot nobody is expecting: against a man who has not noticed you, or who is
+-- asleep in his chair, a quiet round hits for a great deal more, which is the
+-- whole reason to carry the thing.
+weapons.QUIET_SURPRISE = 2.2
 
 function weapons.roll(w)
     local lo, hi = w.damage[1], w.damage[2]

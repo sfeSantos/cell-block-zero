@@ -76,8 +76,16 @@ everything back to the way it comes out of the box.
 | Cheats | F3 god, F4 invisible, F5 endless ammunition |
 | Map on and off | tab |
 | Pause | P |
+| Save the block as it is | F9, or the line in the menu |
 | Menu, with the block left as it is | escape |
 | Fullscreen, controls | F11, F1 |
+
+F9 writes the block to the save file exactly as it stands: where everybody
+is, what is on the floor, which doors and lockers are open, what you are
+carrying and how long you have been at it. The menu has the same thing on a
+line of its own while a block is in progress, and `Load the saved game` at the
+top of the menu takes you back into it. There is one slot, and the newest save
+is what is in it.
 
 Escape puts the block on hold and goes out to the menu. The block is kept
 exactly as it was, and the menu grows a line at the top, `Carry on`, that
@@ -183,9 +191,12 @@ often the alarm went off, and what health and vest you walked out with.
 | Leg trap | traps | set with B, kills a dog or a guard who is not looking |
 
 The silencer is a pickup. Once you have it, T fits it to the revolver or the
-uzi: a shot then carries about four tiles instead of seventeen, at the cost of
-some stopping power. It is the difference between killing one guard and
-fighting the wing.
+uzi: a shot then carries about four tiles instead of seventeen, and it costs
+nothing in stopping power. Against somebody who has not noticed you, a quiet
+round hits for well over twice as much, which puts a guard down with one shot
+from the revolver, and a man asleep in his chair never wakes up. Once he is
+shooting back the surprise is gone and it does what the loud round does. It
+is the difference between killing one guard and fighting the wing.
 
 The throwing knife is the quiet way of killing somebody who is too far off to
 walk up to: 45 damage, 77 in the back, which kills a guard or a sergeant
@@ -397,6 +408,7 @@ anything made from it, is not allowed.
 | `src/enemy.lua` | the guards: senses, rounds, fighting, dying |
 | `src/nav.lua` | the shared distance field, cover and flank queries |
 | `src/projectile.lua` | rockets and grenades |
+| `src/save.lua` | the saved game: the whole block written down and read back |
 | `assets/` | art painted over what the code draws, see its own README |
 | `tools/` | the Python scripts that drew what is in `assets/` |
 | `src/fx.lua` | blood, sparks, smoke, fireballs |

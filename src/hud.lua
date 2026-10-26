@@ -444,14 +444,18 @@ local MENU_TOP, MENU_STEP = 0.28, 34
 hud.LINK = "github.com/sfeSantos/cell-block-zero"
 hud.URL = "https://github.com/sfeSantos/cell-block-zero"
 
--- When a block is halfway through, the menu grows a line at the top that
--- drops you back into it where you left off.
+-- The menu grows lines at the top for what is going on right now: the block
+-- you walked out of and left standing, and the game waiting in the save file.
+-- main.lua says which ones, and in which order.
+hud.extras = {}
+
 local function items()
-    if not hud.resume then
-        return MENU
+    local list = {}
+
+    for _, extra in ipairs(hud.extras) do
+        list[#list + 1] = extra.label
     end
 
-    local list = {"Carry on"}
     for _, item in ipairs(MENU) do
         list[#list + 1] = item
     end
@@ -459,8 +463,16 @@ local function items()
     return list
 end
 
-function hud.setResume(on)
-    hud.resume = on and true or false
+function hud.setExtras(list)
+    hud.extras = list or {}
+    hud.resume = false
+
+    for _, extra in ipairs(hud.extras) do
+        if extra.id == "carryon" then
+            hud.resume = true
+        end
+    end
+
     hud.menuCount = #items()
 end
 
@@ -493,7 +505,7 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
     local y = h * MENU_TOP
     for i, item in ipairs(items()) do
         local text = item
-        local k = hud.resume and i - 1 or i
+        local k = i - #hud.extras
 
         if k == 2 then
             text = string.format("%s:  %d of %d, %s", item, cfg.block, #names,
@@ -533,6 +545,12 @@ function hud.drawMenu(sel, cfg, saved, names, w, h)
     end
 
     love.graphics.setFont(fonts.small)
+
+    if hud.note then
+        setColor(0.72, 0.78, 0.68)
+        love.graphics.printf(hud.note, 0, h - 80, w, "center")
+    end
+
     setColor(0.52, 0.48, 0.34)
     if saved.unlocked < #names then
         love.graphics.printf(string.format("blocks open: %d of %d, the next one unlocks"
@@ -748,6 +766,8 @@ local CONTROLS = {
     {"silencer on and off", "T, or the middle mouse button"},
     {"map on and off", "tab"},
     {"pause", "P, or escape for the menu and Carry on to come back"},
+    {"save the block as it is", "F9, or the line in the menu"},
+    {"load the saved game", "menu: Load the saved game"},
     {"developer console", "F2 or the tilde key, then help"},
     {"cheats", "F3 god, F4 invisible, F5 endless ammunition"},
     {"fullscreen", "F11"},

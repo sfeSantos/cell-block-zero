@@ -8,6 +8,7 @@ local hud = require("src.hud")
 local audio = require("src.audio")
 local World = require("src.world")
 local progress = require("src.progress")
+local save = require("src.save")
 local Level = require("src.level")
 local Player = require("src.player")
 local console = require("src.console")
@@ -22,6 +23,7 @@ local saved = {unlocked = 1}
 local world, entryCarry, entryPath
 local menuSel = 1
 local report, reportNext
+local savedGame
 local showControls = false
 local showMap = false
 local paused = false
@@ -30,7 +32,7 @@ local stats = {time = "0:00", kills = 0, takedowns = 0}
 local startTime = 0
 
 local RANGE = "levels/range.txt"
-local menuMove, menuPick
+local menuMove, menuPick, refreshExtras
 
 local function indexOf(path)
     for i, p in ipairs(LEVELS) do
@@ -110,7 +112,7 @@ local function loadLevel(path, carry)
     entryCarry = carry
     endT = 0
     state = "briefing"
-    hud.setResume(false)
+    hud.setExtras({})
     grabMouse(false)
 
     return true
@@ -144,6 +146,7 @@ function love.load()
     rc.resize(love.graphics.getDimensions())
     hud.load()
     audio.load()
+    refreshExtras(false)
 end
 
 local function applyMouse()
@@ -226,12 +229,32 @@ local function beginPlay()
     grabMouse(true)
 end
 
+-- The lines at the top of the menu: the block left standing, saving it, and
+-- the game waiting in the save file.
+function refreshExtras(keep)
+    local list = {}
+
+    if keep and world then
+        list[#list + 1] = {id = "carryon", label = "Carry on"}
+        list[#list + 1] = {id = "savegame", label = "Save the block as it is"}
+    end
+
+    savedGame = save.read()
+    if savedGame then
+        list[#list + 1] = {id = "loadgame",
+            label = "Load the saved game: " .. (savedGame.name or "a block")}
+    end
+
+    hud.setExtras(list)
+end
+
 -- Out to the menu with the block left exactly as it is, and back into it from
 -- the line the menu grows at the top.
 local function toMenu(keep)
     state = "menu"
     grabMouse(false)
-    hud.setResume(keep and world ~= nil)
+    hud.note = nil
+    refreshExtras(keep)
 
     if keep then
         paused = true
@@ -243,6 +266,57 @@ local function toMenu(keep)
     end
 
     menuSel = math.min(menuSel, hud.menuCount)
+end
+
+local function saveGame(fromMenu)
+    if not world or not world.player.alive then
+        return false
+    end
+
+    local elapsed = love.timer.getTime() - (startTime or love.timer.getTime())
+    if pausedAt then
+        elapsed = pausedAt - (startTime or pausedAt)
+    end
+
+    if not save.write(world, entryPath, cfg.difficulty, elapsed) then
+        return false
+    end
+
+    if fromMenu then
+        hud.note = "Saved. The block waits for you in the save file."
+        refreshExtras(true)
+    else
+        world:message("Block saved")
+    end
+
+    return true
+end
+
+local function loadSaved()
+    local data = savedGame or save.read()
+    if not data then
+        return false
+    end
+
+    local w = save.restore(data, audio)
+    if not w then
+        return false
+    end
+
+    world = w
+    entryPath = data.level
+    entryCarry = Player.carryOver(w.player, w.level.spawn)
+    endT = 0
+    hud.note = nil
+    hud.setExtras({})
+    applyMouse()
+    state = "play"
+    paused = false
+    pausedAt = nil
+    startTime = love.timer.getTime() - (data.elapsed or 0)
+    grabMouse(true)
+
+    return true
 end
 
 local function carryOn()
@@ -640,15 +714,12 @@ local MENU_ACTIONS = {"start", "block", "difficulty", "pointer", "turn",
     "vertical", "sens", "range", "controls", "quit"}
 
 local function menuAction(i)
-    if hud.resume then
-        if i == 1 then
-            return "carryon"
-        end
-
-        i = i - 1
+    local extras = hud.extras or {}
+    if i <= #extras then
+        return extras[i].id
     end
 
-    return MENU_ACTIONS[i]
+    return MENU_ACTIONS[i - #extras]
 end
 
 function menuMove(d)
@@ -683,6 +754,10 @@ function menuPick()
 
     if what == "carryon" then
         carryOn()
+    elseif what == "savegame" then
+        saveGame(true)
+    elseif what == "loadgame" then
+        loadSaved()
     elseif what == "start" then
         loadLevel(LEVELS[math.min(cfg.block, saved.unlocked)], nil)
     elseif what == "range" then
@@ -825,6 +900,12 @@ function love.keypressed(key)
 
     if key == "escape" then
         toMenu(true)
+
+        return
+    end
+
+    if key == "f9" then
+        saveGame(false)
 
         return
     end

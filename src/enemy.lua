@@ -1132,6 +1132,13 @@ function Enemy:hurt(amount, world, srcX, srcY)
     end
 end
 
+-- Nobody has told him anything and he has seen nothing: asleep in the chair,
+-- or walking his round with his mind elsewhere.
+function Enemy:unaware()
+    return self.alive and (self.asleep
+        or (not self.awake and self.state == "idle" and self.seenT <= 0))
+end
+
 function Enemy:die(world, silent)
     self.alive = false
     self.state = "dead"

@@ -505,8 +505,7 @@ function Player:fire(world)
         self.muzzle = quiet and 0.12 or 0.55
         local spread = w.spread * (1 + self:speed() * 0.22)
         local a = self.angle + (love.math.random() - 0.5) * spread * 2
-        local dmg = weapons.roll(w) * (quiet and weapons.QUIET_DAMAGE or 1)
-        world:hitscan(self.x, self.y, a, w.range, dmg, self)
+        world:hitscan(self.x, self.y, a, w.range, weapons.roll(w), self, quiet)
     end
 end
 
