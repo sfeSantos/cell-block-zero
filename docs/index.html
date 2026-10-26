@@ -6,7 +6,7 @@
 <title>Cell Block Zero</title>
 <meta name="description" content="A prison break in the shape of the first Wolfenstein 3D, written in Lua for LOVE 11.x, with everything drawn in code at startup.">
 <meta property="og:title" content="Cell Block Zero">
-<meta property="og:description" content="A prison break in the shape of the first Wolfenstein 3D. Every texture, sprite and sound is generated at startup, and the art files are painted over the top.">
+<meta property="og:description" content="A prison break in the shape of the first Wolfenstein 3D. Every texture, sprite and sound is generated at startup, and a file in assets/ takes the place of what the code drew.">
 <meta property="og:image" content="shots/corridor.png">
 <style>
 :root {
@@ -193,7 +193,7 @@ footer {
     written in Lua for LÖVE 11.x. <b>Everything is drawn in code:</b> the
     walls and the ground pixel by pixel at startup, every sprite and every
     first person weapon into a canvas, every sound synthesised. The art that
-    ships in <code>assets/</code> is painted over that as the game loads, and
+    ships in <code>assets/</code> takes the place of what the code drew, and
     it runs the same with that folder empty. Three blocks, drawn in text
     files.</p>
     <p class="links">

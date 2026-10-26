@@ -20,9 +20,9 @@ from the game folder. To pack it into one file:
 
 It needs nothing else. Everything is drawn in code at startup: the walls and
 the ground pixel by pixel, the guards, the pickups and the weapon in your
-hands into a canvas, and every sound is synthesised. The art files under
-assets/ are painted over that as the game loads, and the game runs the same
-with that folder empty. assets/README.md says what goes in there and tools/
+hands into a canvas, and every sound is synthesised. A file under assets/ takes the place
+of what the code drew, and the code is only the fallback for whatever has no
+file, so the game runs the same with that folder empty. assets/README.md says what goes in there and tools/
 has the scripts that drew it.
 
 The window opens fullscreen at the desktop resolution. F11 switches to a
@@ -723,7 +723,7 @@ An example, the smallest level that works:
   src/level.lua         reads a level file, doors, line of sight, ray casting
   src/raycaster.lua     the 3D view: walls, sprites, the depth buffer
   src/textures.lua      wall, door and ground textures, pixel by pixel
-  assets/               art painted over what the code draws
+  assets/               art used in place of what the code draws
   tools/                the scripts that drew what is in assets/
   src/art.lua           guards, pickups, explosions, the weapon in your hands
   src/world.lua         one level being played, and everything in it

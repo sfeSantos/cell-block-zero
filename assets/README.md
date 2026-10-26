@@ -1,9 +1,10 @@
 # Dropping your own art in here
 
 Nothing in this folder is required. Everything in the game is drawn in code at
-startup, and a file here is painted over the top of the one the code drew. Put
-in the ones you want to replace, leave out the ones you do not, and the game
-runs either way.
+startup, and a file here takes the place of the one the code drew: where there
+is a file, that file is what you see, and the drawing in code is only what
+happens when the file is missing. Put in the ones you want to replace, leave
+out the ones you do not, and the game runs either way.
 
 A file is matched to what it replaces by its name.
 

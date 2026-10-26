@@ -4,9 +4,9 @@ A prison break in the shape of the first Wolfenstein 3D, written in Lua for
 [LÖVE](https://love2d.org/) 11.x. One ray per screen column, billboard sprites,
 text files for levels. Everything is drawn in code at startup: the walls and
 the ground are written pixel by pixel into an atlas, the guards and the
-weapons into a canvas, and every sound is synthesised. The art files in
-`assets/` are painted over that when the game loads, and the game runs the
-same with the folder empty.
+weapons into a canvas, and every sound is synthesised. A file in `assets/`
+takes the place of what the code drew, and the code is only the fallback for
+whatever has no file, so the game runs the same with the folder empty.
 
 Lights out an hour ago, and the guard who let himself into your cell was not
 there to talk. He is still on the floor of it, and everything you own came
@@ -437,7 +437,7 @@ anything made from it, is not allowed.
 | `src/nav.lua` | the shared distance field, cover and flank queries |
 | `src/projectile.lua` | rockets and grenades |
 | `src/save.lua` | the saved game: the whole block written down and read back |
-| `assets/` | art painted over what the code draws, see its own README |
+| `assets/` | art used in place of what the code draws, see its own README |
 | `tools/` | the Python scripts that drew what is in `assets/`, and the web build |
 | `docs/` | the project page, and `docs/play/` the browser version |
 | `src/fx.lua` | blood, sparks, smoke, fireballs |
