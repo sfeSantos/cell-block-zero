@@ -69,7 +69,7 @@ Enemy.TIERS = {
         sound = "shout2",
         gun = "uzi",
         -- he is wearing the thing, so sometimes you get to wear it
-        drops = {{"vest", 0.14}, {"uzi", 0.16}, {"bullets", 0.22},
+        drops = {{"vest", 0.14}, {"uzi", 0.16}, {"clips", 0.22},
             {"ammobox", 0.1}},
     },
     {
@@ -1081,12 +1081,21 @@ function Enemy:dodge(dx, dy)
     self.dodgeT = 0.55
 end
 
-function Enemy:hurt(amount, world, srcX, srcY)
+-- quiet is a round he never heard coming, and it is only passed when it is
+-- enough to finish him: he goes down without waking and without the shout.
+function Enemy:hurt(amount, world, srcX, srcY, quiet)
     if not self.alive then
         return
     end
 
     self.hp = self.hp - amount
+
+    if quiet and self.hp <= 0 and not self.dummy then
+        world:spawnFx("fx.blood", self.x, self.y, 0.45, 0.25)
+        self:die(world, true)
+
+        return
+    end
 
     if world.readout then
         world:message(("%s took %d, %d left"):format(self.t.name,

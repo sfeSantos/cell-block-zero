@@ -119,8 +119,21 @@ local function drawWeaponView(world, w, h, barH)
     local x = w * 0.5 - art.VIEW_W * scale * 0.5 + sway + (kind and -w * 0.05 or 0)
     local y = h - barH * 0.35 - art.VIEW_H * scale + rise - player.kick * 1.1
 
+    -- out of the line of sight while the magazine is changed: down and in
+    -- towards the body, and a tilt that puts the other hand on it
+    local dip = player:reloadDip()
+    local tilt = 0
+
+    if dip > 0 then
+        y = y + art.VIEW_H * scale * 0.52 * dip
+        x = x + 26 * dip
+        tilt = -0.30 * dip
+    end
+
     setColor(1, 1, 1, 1)
-    love.graphics.draw(art.views, quad, x, y, 0, scale, scale)
+    love.graphics.draw(art.views, quad, x + art.VIEW_W * scale * 0.5,
+        y + art.VIEW_H * scale, tilt, scale, scale,
+        art.VIEW_W * 0.5, art.VIEW_H)
 end
 
 local function drawCrosshair(world, w, h, horizon)
@@ -171,9 +184,36 @@ local function drawStatus(world, w, h, barH)
 
     if def.ammo then
         label("AMMO", col2, y + pad + 38, fonts.small)
-        love.graphics.setFont(fonts.big)
-        setColor(0.94, 0.86, 0.42)
-        love.graphics.print(tostring(math.floor(player.ammo[def.ammo] or 0)), col2 + 48, y + pad + 32)
+        local spare = math.floor(player.ammo[def.ammo] or 0)
+
+        if def.clip then
+            local inGun = player.mag[def.id] or 0
+            local text = tostring(inGun)
+            love.graphics.setFont(fonts.big)
+
+            if inGun > 0 then
+                setColor(0.94, 0.86, 0.42)
+            else
+                setColor(0.84, 0.36, 0.30)
+            end
+
+            love.graphics.print(text, col2 + 48, y + pad + 32)
+
+            local tx = col2 + 54 + fonts.big:getWidth(text)
+            love.graphics.setFont(fonts.small)
+
+            if player.reloadT > 0 then
+                setColor(0.90, 0.80, 0.40)
+                love.graphics.print("LOADING", tx, y + pad + 44)
+            else
+                setColor(0.58, 0.58, 0.56)
+                love.graphics.print("/ " .. spare, tx, y + pad + 44)
+            end
+        else
+            love.graphics.setFont(fonts.big)
+            setColor(0.94, 0.86, 0.42)
+            love.graphics.print(tostring(spare), col2 + 48, y + pad + 32)
+        end
     else
         label("no ammunition needed", col2, y + pad + 44, fonts.small)
     end
@@ -792,7 +832,8 @@ local CONTROLS = {
     {"weapons", "1 to 7, or the mouse wheel"},
     {"throw a grenade", "G"},
     {"throw a flash grenade", "F"},
-    {"throw a knife", "R, without putting your gun away"},
+    {"throw a knife", "V, without putting your gun away"},
+    {"reload", "R, or pull the trigger on an empty magazine"},
     {"set a trap", "B, on the floor in front of you"},
     {"silencer on and off", "T, or the middle mouse button"},
     {"map on and off", "tab"},

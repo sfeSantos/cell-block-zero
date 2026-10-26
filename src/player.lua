@@ -10,7 +10,9 @@ local RADIUS = 0.26
 local WALK = 2.5
 local RUN = 4.1
 local TURN = 2.7
-local MAX = {bullets = 150, rockets = 20, grenades = 9, flashes = 6,
+-- bullets are what the revolver takes, clips are the 9mm the uzi eats. One
+-- will not go in the other, which is the point of carrying both.
+local MAX = {bullets = 90, clips = 200, rockets = 20, grenades = 9, flashes = 6,
     knives = 12, traps = 4}
 local BLADE_USES = 3      -- throws in a blade before it is scrap
 local BLADES = 4          -- how many of them you can carry
@@ -49,8 +51,11 @@ function Player.new(spawn)
     self.health = 100
     self.armor = 50
     self.armorMax = 100
-    self.ammo = {bullets = 20, rockets = 0, grenades = 0, flashes = 0,
-        knives = 0, traps = 0}
+    self.ammo = {bullets = 24, clips = 0, rockets = 0, grenades = 0,
+        flashes = 0, knives = 0, traps = 0}
+    self.mag = {}
+    self.reloadT = 0
+    self.reloadMax = 0
     self.has = {hatchet = true, revolver = true}
     self.blades = {}
     self.keys = {}
@@ -118,6 +123,10 @@ function Player.carryOver(from, spawn)
 
     for k, v in pairs(from.ammo) do
         self.ammo[k] = v
+    end
+
+    for k, v in pairs(from.mag or {}) do
+        self.mag[k] = v
     end
 
     -- the blades come through with the wear they have on them, and only
@@ -239,6 +248,79 @@ function Player:weaponDef()
     return weapons.byId[self.weapon]
 end
 
+-- What is in the gun, as against what is in your pockets. A gun that has
+-- never been fired comes loaded, off the rounds you are carrying: doing it
+-- here means one picked up off the floor, carried into the next block or
+-- read back out of a save all arrive with a magazine in them.
+function Player:magOf(w)
+    if not w.clip then
+        return nil
+    end
+
+    if not self.mag[w.id] then
+        local spare = self.ammo[w.ammo] or 0
+        local take = math.min(w.clip, spare)
+        self.mag[w.id] = take
+        self.ammo[w.ammo] = spare - take
+    end
+
+    return self.mag[w.id]
+end
+
+-- The magazine comes out, a full one goes in, and the gun is no use to
+-- anybody in between. It makes no noise worth hearing.
+function Player:reload(world)
+    local w = self:weaponDef()
+    if not w.clip or self.reloadT > 0 or not self.alive or self.takedown then
+        return false
+    end
+
+    if self.endlessAmmo or (self:magOf(w) >= w.clip)
+            or (self.ammo[w.ammo] or 0) <= 0 then
+        return false
+    end
+
+    self.reloadT = w.reload or weapons.RELOAD
+    self.reloadMax = self.reloadT
+    world.audio.play("click", 0.45, 0.8)
+
+    return true
+end
+
+function Player:finishReload(world)
+    local w = self:weaponDef()
+    self.reloadT = 0
+
+    if not w.clip then
+        return
+    end
+
+    local room = w.clip - self:magOf(w)
+    local take = math.min(room, self.ammo[w.ammo] or 0)
+    self.mag[w.id] = self.mag[w.id] + take
+    self.ammo[w.ammo] = (self.ammo[w.ammo] or 0) - take
+    world.audio.play("clink", 0.4, 0.7)
+end
+
+-- How far the gun has dropped out of sight while the magazine is changed,
+-- 0 when it is up and 1 at the bottom of the swing. Down fast, a beat with
+-- both hands on it, then back up.
+function Player:reloadDip()
+    if self.reloadT <= 0 or self.reloadMax <= 0 then
+        return 0
+    end
+
+    local t = 1 - self.reloadT / self.reloadMax
+
+    if t < 0.22 then
+        return t / 0.22
+    elseif t > 0.78 then
+        return (1 - t) / 0.22
+    end
+
+    return 1
+end
+
 function Player:canHold(id)
     if not self.has[id] then
         return false
@@ -247,6 +329,10 @@ function Player:canHold(id)
     local w = weapons.byId[id]
     if w.projectile == "grenade" or w.projectile == "flash" or w.id == "knife" then
         return self.endlessAmmo or (self.ammo[w.ammo] or 0) > 0
+    end
+
+    if w.clip and not self.endlessAmmo then
+        return self:magOf(w) > 0 or (self.ammo[w.ammo] or 0) > 0
     end
 
     return true
@@ -278,6 +364,7 @@ function Player:select(slot)
 
     if self:canHold(w.id) then
         self.weapon = w.id
+        self.reloadT = 0
         self.cooldown = math.max(self.cooldown, 0.18)
     end
 end
@@ -316,6 +403,18 @@ end
 
 function Player:update(dt, world)
     self.cooldown = math.max(0, self.cooldown - dt)
+
+    if self.reloadT > 0 then
+        self.reloadT = self.reloadT - dt
+
+        if self.reloadT <= 0 then
+            self:finishReload(world)
+        end
+    end
+
+    -- so the bar can read the magazine without filling it on the way past
+    self:magOf(self:weaponDef())
+
     self.fireT = math.max(0, self.fireT - dt)
     self.throwT = math.max(0, self.throwT - dt)
     self.muzzle = math.max(0, self.muzzle - dt * 6)
@@ -453,7 +552,7 @@ function Player:update(dt, world)
 end
 
 function Player:fire(world)
-    if self.cooldown > 0 or not self.alive then
+    if self.cooldown > 0 or self.reloadT > 0 or not self.alive then
         return
     end
 
@@ -472,6 +571,20 @@ function Player:fire(world)
                 return
             end
         end
+    elseif w.clip and not self.endlessAmmo then
+        if self:magOf(w) <= 0 then
+            -- an empty gun loads itself rather than clicking at the man in
+            -- front of you, which is what the hand would do anyway
+            if not self:reload(world) then
+                self.cooldown = 0.35
+                world.audio.play("dry", 0.4)
+                world:message("No ammunition")
+            end
+
+            return
+        end
+
+        self.mag[w.id] = self.mag[w.id] - 1
     elseif w.ammo and not self.endlessAmmo then
         local left = self.ammo[w.ammo] or 0
         if left <= 0 then
@@ -490,7 +603,6 @@ function Player:fire(world)
     self.fireT = 0.1
     self.kick = self.kick + w.kick * (quiet and 0.75 or 1)
     world.audio.play(quiet and w.quietSound or w.sound, quiet and 0.4 or 0.55)
-    world:noise(self.x, self.y, quiet and w.quietNoise or w.noise, nil)
 
     if w.melee then
         world:melee(self, self.angle, w)
@@ -507,6 +619,11 @@ function Player:fire(world)
         local a = self.angle + (love.math.random() - 0.5) * spread * 2
         world:hitscan(self.x, self.y, a, w.range, weapons.roll(w), self, quiet)
     end
+
+    -- the shot carries after the round has landed, not before it. The other
+    -- way round the man in front of the barrel heard the bang in time to
+    -- turn, which took the surprise off every silenced round ever fired.
+    world:noise(self.x, self.y, quiet and w.quietNoise or w.noise, nil)
 end
 
 function Player:quickThrow(kind, world)
@@ -722,9 +839,19 @@ end
 GIVE.uzi = function(self)
     local fresh = not self.has.uzi
     self.has.uzi = true
-    self.ammo.bullets = math.min(MAX.bullets, self.ammo.bullets + 16)
+    self.ammo.clips = math.min(MAX.clips, self.ammo.clips + 50)
 
     return true, fresh and "Uzi!" or "Uzi ammunition"
+end
+
+GIVE.clips = function(self)
+    if self.ammo.clips >= MAX.clips then
+        return false
+    end
+
+    self.ammo.clips = math.min(MAX.clips, self.ammo.clips + 50)
+
+    return true, "9mm, two magazines"
 end
 
 GIVE.launcher = function(self)
@@ -762,19 +889,22 @@ GIVE.bullets = function(self)
         return false
     end
 
-    self.ammo.bullets = math.min(MAX.bullets, self.ammo.bullets + 8)
+    self.ammo.bullets = math.min(MAX.bullets, self.ammo.bullets + 12)
 
-    return true, "Bullets"
+    return true, "Revolver rounds"
 end
 
+-- The box off the armoury shelf has both calibres in it, which is the only
+-- thing that fills the revolver and the uzi in one go.
 GIVE.ammobox = function(self)
-    if self.ammo.bullets >= MAX.bullets then
+    if self.ammo.bullets >= MAX.bullets and self.ammo.clips >= MAX.clips then
         return false
     end
 
-    self.ammo.bullets = math.min(MAX.bullets, self.ammo.bullets + 25)
+    self.ammo.bullets = math.min(MAX.bullets, self.ammo.bullets + 24)
+    self.ammo.clips = math.min(MAX.clips, self.ammo.clips + 50)
 
-    return true, "Box of bullets"
+    return true, "Box of ammunition"
 end
 
 GIVE.rockets = function(self)

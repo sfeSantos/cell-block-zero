@@ -92,8 +92,12 @@ function save.snapshot(world, path, difficulty, elapsed)
         secrets = {},
     }
 
-    data.player.ammo = copy(p.ammo, {"bullets", "rockets", "grenades",
+    data.player.ammo = copy(p.ammo, {"bullets", "clips", "rockets", "grenades",
         "flashes", "knives", "traps"})
+    data.player.mag = {}
+    for k, v in pairs(p.mag) do
+        data.player.mag[k] = v
+    end
     data.player.has = {}
     for k, v in pairs(p.has) do
         data.player.has[k] = v
@@ -224,6 +228,12 @@ function save.restore(data, audio)
     for k, v in pairs(data.player.ammo or {}) do
         p.ammo[k] = v
     end
+
+    p.mag = {}
+    for k, v in pairs(data.player.mag or {}) do
+        p.mag[k] = v
+    end
+    p.reloadT = 0
 
     p.has = {}
     for k, v in pairs(data.player.has or {}) do

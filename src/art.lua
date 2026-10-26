@@ -340,6 +340,21 @@ function items.bullets()
     rect(20, 54, 24, 5, {0.35, 0.36, 0.38})
 end
 
+-- A pair of uzi magazines, taped together the way the wing guards carry
+-- them, so they do not read as loose revolver rounds on the floor.
+function items.clips()
+    for _, x in ipairs({20, 33}) do
+        rect(x, 36, 11, 22, {0.26, 0.27, 0.30})
+        rect(x, 36, 11, 3, {0.40, 0.42, 0.46})
+        rect(x + 1, 41, 2, 15, {0.17, 0.18, 0.20})
+        rect(x + 8, 41, 2, 15, {0.17, 0.18, 0.20})
+        rect(x + 3, 33, 5, 4, BRASS)
+    end
+
+    rect(18, 44, 28, 3, {0.14, 0.14, 0.16})
+    rect(18, 52, 28, 3, {0.14, 0.14, 0.16})
+end
+
 function items.ammobox()
     rect(14, 38, 36, 20, {0.32, 0.34, 0.24})
     rect(14, 38, 36, 4, {0.44, 0.46, 0.32})
@@ -502,9 +517,9 @@ function items.knife()
     poly({0.90, 0.92, 0.95}, 30, 45, 48, 48, 32, 49)
 end
 
-art.ITEM_ORDER = {"uzi", "launcher", "grenades", "flashes", "bullets", "ammobox",
-    "rockets", "vest", "vestheavy", "medkit", "snack", "silencer", "redkey",
-    "bluekey", "yellowkey", "knife", "trap", "trapset", "trapsprung"}
+art.ITEM_ORDER = {"uzi", "launcher", "grenades", "flashes", "bullets", "clips",
+    "ammobox", "rockets", "vest", "vestheavy", "medkit", "snack", "silencer",
+    "redkey", "bluekey", "yellowkey", "knife", "trap", "trapset", "trapsprung"}
 
 -- What is left in the old cells. Every prop stands on the floor of its tile,
 -- so a cell is drawn with the ground at the bottom edge and nothing is ever
@@ -907,21 +922,43 @@ local function tube(cx, yTop, wTop, yBot, wBot, c)
         cx + wBot * 0.5, yBot, cx - wBot * 0.5, yBot)
 end
 
-local function fists(spread)
-    spread = spread or 0
-    local cy = -8
-    disc(-15 - spread, cy - 14, 13, SKIN)
-    rect(-28 - spread, cy - 14, 26, 26, SKIN)
-    disc(13 + spread, cy - 10, 12, SKIN)
-    rect(2 + spread, cy - 10, 24, 24, SKIN)
+local SKIN_HI = {0.88, 0.71, 0.56}
+local FINGERS = {22, 26, 25, 21}
 
-    for i = 0, 3 do
-        rect(-13, cy - 32 + i * 9, 26, 6, SKIN)
-        rect(-13, cy - 27 + i * 9, 26, 2, SKIN_LO)
+-- One finger round the front of the grip: a bar with the knuckle end rounded
+-- off on the left, a lit top edge and the crease of the next one under it.
+local function finger(x, y, w, h, base, shade)
+    rect(x, y, w, h, base)
+    disc(x, y + h * 0.5, h * 0.5, base)
+    rect(x, y, w, 2, SKIN_HI)
+    rect(x - 1, y + h - 2, w + 1, 2, shade)
+end
+
+-- One hand on the weapon, the right, seen from behind and a little above.
+-- The other one is busy with doors, lockers and the man on the floor.
+local function fists(spread)
+    local hx = 2 + (spread or 0) * 0.5
+    local cy = -8
+
+    rect(hx - 4, cy - 30, 26, 42, SKIN)
+    rect(hx + 16, cy - 30, 6, 42, SKIN_HI)
+    disc(hx + 9, cy - 30, 13, SKIN)
+    rect(hx + 2, cy - 24, 2, 20, SKIN_HI)
+    rect(hx + 8, cy - 22, 2, 17, SKIN_HI)
+
+    for i, w in ipairs(FINGERS) do
+        finger(hx - 18, cy - 28 + (i - 1) * 9, w, 8, SKIN, SKIN_LO)
     end
 
-    rect(-32 - spread, cy + 10, 64 + spread * 2, 14, CUFF)
-    rect(-32 - spread, cy + 10, 64 + spread * 2, 3, {0.62, 0.64, 0.68})
+    -- the thumb, over the top of them and pointing in
+    poly(SKIN_HI, hx + 20, cy - 28, hx + 12, cy - 38, hx - 2, cy - 38,
+        hx - 6, cy - 30, hx + 6, cy - 24, hx + 18, cy - 22)
+    poly(SKIN, hx + 10, cy - 36, hx - 2, cy - 35, hx - 4, cy - 30,
+        hx + 8, cy - 29)
+
+    rect(hx - 6, cy + 6, 28, 12, SKIN_LO)
+    rect(hx - 8, cy + 14, 32, 15, CUFF)
+    rect(hx - 8, cy + 14, 32, 3, {0.62, 0.64, 0.68})
 end
 
 local function muzzleFlash(x, y, s, quiet)
@@ -1055,14 +1092,18 @@ end
 local function thrower(frame, ball)
     held(0, function()
         if frame == 2 then
-            rect(-16, -138, 32, 92, SKIN)
-            rect(-16, -66, 32, 16, CUFF)
-            disc(0, -140, 18, SKIN)
-            for i = 0, 2 do
-                rect(-15, -152 + i * 9, 30, 6, SKIN)
-                rect(-15, -147 + i * 9, 30, 2, SKIN_LO)
+            -- the arm gone out after it, open hand at the end of the throw
+            rect(-14, -138, 28, 92, SKIN)
+            rect(8, -138, 6, 92, SKIN_HI)
+            rect(-14, -66, 28, 16, CUFF)
+            rect(-14, -152, 28, 20, SKIN)
+            disc(10, -148, 12, SKIN)
+
+            for i, w in ipairs({24, 26, 23}) do
+                finger(-16, -158 + (i - 1) * 9, w, 8, SKIN, SKIN_LO)
             end
-            disc(-15, -136, 7, SKIN_LO)
+
+            poly(SKIN_HI, 12, -154, 4, -164, -8, -162, -6, -154, 6, -150)
 
             return
         end
@@ -1071,10 +1112,19 @@ local function thrower(frame, ball)
         lg.translate(0, -58)
         ball()
         lg.pop()
-        rect(-18, -34, 36, 44, SKIN)
-        disc(-16, -34, 11, SKIN)
-        disc(16, -34, 11, SKIN)
-        rect(-18, 2, 36, 14, CUFF)
+
+        -- the hand closed round it, fingers curled over the front
+        rect(-14, -36, 28, 46, SKIN)
+        rect(8, -36, 6, 46, SKIN_HI)
+        disc(0, -36, 14, SKIN)
+
+        for i, w in ipairs({24, 27, 26, 22}) do
+            finger(-16, -40 + (i - 1) * 9, w, 8, SKIN, SKIN_LO)
+        end
+
+        poly(SKIN_HI, 14, -38, 6, -48, -6, -47, -8, -39, 4, -33)
+        rect(-6, -44, 8, 3, SKIN)
+        rect(-16, 6, 32, 14, CUFF)
     end)
 end
 

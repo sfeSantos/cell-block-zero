@@ -41,6 +41,7 @@ local ITEMS = {
     g = "grenades",
     f = "flashes",
     a = "bullets",
+    U = "clips",
     A = "ammobox",
     o = "rockets",
     v = "vest",

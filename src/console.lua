@@ -100,7 +100,8 @@ add("give", "give <weapon|ammo|keys|all>", function(ctx, args)
     end
 
     if what == "all" or what == "ammo" then
-        p.ammo.bullets = 150
+        p.ammo.bullets = 90
+        p.ammo.clips = 200
         p.ammo.rockets = 20
         p.ammo.grenades = 9
         p.ammo.flashes = 6

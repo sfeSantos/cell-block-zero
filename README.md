@@ -95,8 +95,9 @@ everything back to the way it comes out of the box.
 | Weapons | 1 to 7, or the mouse wheel |
 | Throw a grenade | G, or the right mouse button |
 | Throw a flash grenade | F |
-| Throw a knife | R |
+| Throw a knife | V |
 | Set a leg trap | B |
+| Reload | R, or pull the trigger on an empty magazine |
 | Silencer on and off | T, or the middle mouse button |
 | Mouse speed | [ and ] |
 | Developer console | F2 or tilde |
@@ -207,24 +208,37 @@ often the alarm went off, and what health and vest you walked out with.
 
 ## Weapons
 
-| Weapon | Ammunition | Notes |
-| --- | --- | --- |
-| Hatchet | none | silent, and twice as hard from behind |
-| Revolver | bullets | accurate, loud, takes the silencer |
-| Uzi | bullets | fast and wild, takes the silencer |
-| Rocket launcher | rockets | clears a room, including you if you are in it |
-| Grenade | grenades | arcs, bounces, goes off on a fuse |
-| Flash grenade | flashes | blinds everyone who can see it, you included |
-| Throwing knife | blades | silent, lethal in the back, three throws a blade |
-| Leg trap | traps | set with B, kills a dog or a guard who is not looking |
+| Weapon | Ammunition | Magazine | Notes |
+| --- | --- | --- | --- |
+| Hatchet | none | | silent, and twice as hard from behind |
+| Revolver | revolver rounds | 6 | accurate, loud, takes the silencer |
+| Uzi | 9mm clips | 25 | fast and wild, takes the silencer |
+| Rocket launcher | rockets | 1 | clears a room, including you if you are in it |
+| Grenade | grenades | | arcs, bounces, goes off on a fuse |
+| Flash grenade | flashes | | blinds everyone who can see it, you included |
+| Throwing knife | blades | | silent, lethal in the back, three throws a blade |
+| Leg trap | traps | | set with B, kills a dog or a guard who is not looking |
+
+The revolver and the uzi do not share a box. The revolver takes its own
+rounds, six at a time, and the uzi eats 9mm out of clips of twenty five, so
+the pile of ammunition for one of them is no use to the other. An ammunition
+box off an armoury shelf is the only pickup that fills both.
+
+A gun with an empty magazine is reloaded with R, and pulling the trigger on
+an empty one starts the same thing rather than clicking at the man in front
+of you. The gun is out of the fight while the magazine is changed: a second
+and a sixth for the revolver, half a second more for the uzi, and putting
+another weapon in your hands drops what you were loading. The bar shows what
+is in the gun, and what is left in your pockets beside it.
 
 The silencer is a pickup. Once you have it, T fits it to the revolver or the
 uzi: a shot then carries about four tiles instead of seventeen, and it costs
-nothing in stopping power. Against somebody who has not noticed you, a quiet
-round hits for well over twice as much, which puts a guard down with one shot
-from the revolver, and a man asleep in his chair never wakes up. Once he is
-shooting back the surprise is gone and it does what the loud round does. It
-is the difference between killing one guard and fighting the wing.
+nothing in stopping power. A quiet round into a man who has not seen you puts
+him down where he stands, whatever his rank and whatever he is wearing, and
+he goes down without the shout that brings the rest of the wing: the riot
+captain who would take four loud rounds takes one. Once he has turned round
+the surprise is gone and it does what the loud round does. It is the
+difference between killing one guard and fighting the wing.
 
 The throwing knife is the quiet way of killing somebody who is too far off to
 walk up to: 45 damage, 77 in the back, which kills a guard or a sergeant
@@ -402,6 +416,7 @@ floor = 0.21,0.19,0.17
 | Weapons | `u` uzi, `l` rocket launcher, `g` grenades, `f` flash grenades, `K` throwing knife |
 | Ammunition | `a` bullets, `A` box of bullets, `o` rockets |
 | Gear | `v` vest, `V` riot vest, `m` first aid, `h` food, `s` silencer |
+| Ammunition | `a` revolver rounds, `U` uzi clips, `A` box of both |
 | Keys | `R` red, `B` blue, `Y` yellow |
 | Scenery | `k` chained skeleton, `n` hanged man, `d` dead prisoner, `c` remains and blood |
 | Prisoner | `p` one who is still alive and will fight for you |

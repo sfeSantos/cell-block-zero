@@ -3,7 +3,8 @@
 ;        L locker (press space)   / a section of wall that slides back
 ; doors: | steel  + bars  r/b/y locked  X exit switch
 ; start: N S W E   guards: 1 2 3   4 dog   z asleep   Z sergeant asleep
-; pickups: u uzi  l launcher  g grenades  f flashes  a bullets  A ammo box
+; pickups: u uzi  l launcher  g grenades  f flashes  a revolver rounds
+;          U uzi clips  A ammo box, both calibres
 ;          o rockets  v vest  V riot vest  m medkit  h food  s silencer
 ;          K throwing knife, three throws in it
 ;          T leg trap, set it on the floor with B
@@ -28,7 +29,7 @@ bluekey = locker
 #.........=====|=============|=============|=======|====##
 #======|=============|======############=#################
 #.........................L=...........L=.%....%.%....%.##
-#..&&&...&&&...&&&...&&1...=..a.....u...=.%....%.%..g.%.##
+#..&&&...&&&...&&&...&&1...=..a.....u.U.=.%....%.%..g.%.##
 #L.&&1...&&&...&&&...&&&...=....2.......=.%.p..%.%.k..%.##
 #..........................|............=.%....%.%....%.##
 #..&&&...&&&...&&&...&&&...=............=.%%+%%%.%%+%%%.##

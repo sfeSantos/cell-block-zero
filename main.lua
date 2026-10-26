@@ -953,6 +953,8 @@ function love.keypressed(key)
     elseif key == "f" then
         player:quickThrow("flashes", world)
     elseif key == "r" then
+        player:reload(world)
+    elseif key == "v" then
         player:quickThrow("knife", world)
     elseif key == "b" then
         world:placeTrap(player)

@@ -23,6 +23,8 @@ weapons.list = {
         view = "revolver",
         sound = "pistol",
         ammo = "bullets",
+        clip = 6,
+        reload = 1.15,
         rate = 0.50,
         damage = {17, 27},
         spread = 0.012,
@@ -38,7 +40,9 @@ weapons.list = {
         name = "Uzi",
         view = "uzi",
         sound = "uzi",
-        ammo = "bullets",
+        ammo = "clips",
+        clip = 25,
+        reload = 1.55,
         rate = 0.085,
         auto = true,
         damage = {6, 11},
@@ -56,6 +60,8 @@ weapons.list = {
         view = "launcher",
         sound = "launch",
         ammo = "rockets",
+        clip = 1,
+        reload = 1.70,
         rate = 1.15,
         projectile = "rocket",
         noise = 12,
@@ -107,10 +113,16 @@ for i, w in ipairs(weapons.list) do
 end
 
 -- A can on the barrel costs the noise and nothing else. What it buys is the
--- shot nobody is expecting: against a man who has not noticed you, or who is
--- asleep in his chair, a quiet round hits for a great deal more, which is the
--- whole reason to carry the thing.
-weapons.QUIET_SURPRISE = 2.2
+-- shot nobody is expecting: a quiet round into a man who has not seen you
+-- puts him down where he stands, whatever his rank and whatever he is
+-- wearing, and he goes down without the shout that brings the rest of the
+-- wing. Once he has turned round it is an ordinary round again, so the can
+-- is worth carrying exactly as long as nobody knows you are there. The rule
+-- itself lives in World:hitscan, where it can see who was hit.
+
+-- How long a gun is out of the fight while the magazine is changed, for one
+-- that does not say otherwise.
+weapons.RELOAD = 1.2
 
 function weapons.roll(w)
     local lo, hi = w.damage[1], w.damage[2]

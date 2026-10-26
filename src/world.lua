@@ -34,6 +34,7 @@ end
 -- hold three things or nothing at all.
 World.LOOT = {
     {"bullets", 0.50},
+    {"clips", 0.26},
     {"snack", 0.30},
     {"medkit", 0.24},
     {"ammobox", 0.20},
@@ -784,14 +785,21 @@ function World:hitscan(x, y, angle, range, damage, owner, quiet)
     end
 
     if best then
-        if quiet and best.unaware and best:unaware() then
-            damage = best.asleep and best.hp + 1
-                or damage * weapons.QUIET_SURPRISE
+        -- the whole point of the can on the barrel: a round nobody was
+        -- waiting for, into a man who has not seen you, puts him down where
+        -- he stands and he goes down quietly
+        local surprise = quiet and best.unaware and best:unaware()
+        if surprise then
+            damage = best.hp + 1
         end
 
         self:tracer(x, y, angle, bestT)
-        best:hurt(damage, self, x, y)
+        best:hurt(damage, self, x, y, surprise)
         self.audio.play("flesh", 0.35)
+
+        if surprise and not best.alive and owner == self.player then
+            self.player.takedowns = self.player.takedowns + 1
+        end
 
         return best
     end

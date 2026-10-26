@@ -82,7 +82,8 @@ docs/play/ and leaves them there.
   Pick a weapon               1 to 7, or the mouse wheel
   Throw a grenade             G, or the right mouse button
   Throw a flash grenade       F
-  Throw a knife               R, without putting your gun away
+  Throw a knife               V, without putting your gun away
+  Reload                      R, or pull the trigger on an empty magazine
   Set a leg trap              B, on the floor in front of you
   Silencer on and off         T, or the middle mouse button
   Mouse speed                 [ and ]
@@ -239,13 +240,14 @@ dropped weapons from your last attempt are gone.
                            Carries 2.5 tiles of noise, which is nothing.
 
   Slot 2  Revolver         17 to 27 damage, reaches 28 tiles, one shot per
-                           press, bullets. Carries 8 tiles of noise, 4 with
-                           the silencer on.
+                           press, six revolver rounds in the cylinder.
+                           Carries 8 tiles of noise, 4 with the silencer on.
 
   Slot 3  Uzi              6 to 11 damage a round, eleven rounds a second
                            while you hold the button, reaches 22 tiles,
-                           bullets. Carries 7 tiles of noise, 5 with the
-                           silencer on. Spreads more the faster you move.
+                           twenty five 9mm in the clip. Carries 7 tiles of
+                           noise, 5 with the silencer on. Spreads more the
+                           faster you move.
 
   Slot 4  Rocket launcher  90 damage at the centre of a blast 2.7 tiles
                            across, rockets. It hurts you too. Carries 12
@@ -293,18 +295,32 @@ middle about a second after you stop. Home levels it at once.
 The view dips a little with each step and kicks when you fire. Neither of
 those moves the sight: the world rocks, the sight does not.
 
-The revolver and the uzi share one pool of bullets.
+THE MAGAZINE is what the gun has in it, and it is not the same thing as what
+you are carrying. The revolver holds six, the uzi twenty five, the launcher
+one. R changes the magazine, and pulling the trigger on an empty one starts
+the same thing instead of clicking at the man in front of you. The gun is out
+of the fight while it happens: 1.15 seconds for the revolver, 1.55 for the
+uzi, 1.7 for the launcher. Putting another weapon in your hands drops what
+you were loading, so it is worth doing behind a corner rather than in a
+doorway. The bar reads "6 / 18": six in the gun, eighteen in your pockets.
 
-Carrying limits: 150 bullets, 20 rockets, 9 grenades, 6 flash grenades.
+THE TWO CALIBRES do not mix. The revolver takes its own rounds and the uzi
+eats 9mm out of clips, so a pile of ammunition for one of them does nothing
+for the other. Only the box off an armoury shelf has both in it.
+
+Carrying limits: 90 revolver rounds, 200 of 9mm, 20 rockets, 9 grenades,
+6 flash grenades.
 
 THE SILENCER is a pickup. Once you have it, T fits it to the revolver or the
 uzi and takes it off again. A fitted can costs most of the noise and nothing
-at all in damage. What it buys is the shot nobody is expecting: against a
-guard who has not seen you it hits for well over twice as much, so one round
-from the revolver drops him, and a man asleep in his chair never wakes up.
-Once he is fighting back it does exactly what the loud round does. It is the
-difference between killing one guard and fighting the whole wing. The status
-bar says "+ can" when it is on.
+at all in damage. What it buys is the shot nobody is expecting: a quiet round
+into a man who has not seen you puts him down where he stands, whatever his
+rank and whatever he is wearing, and he goes down without the shout that
+brings the rest of the wing. The riot captain who would take four loud rounds
+takes one. Once he has turned round the surprise is gone and it does exactly
+what the loud round does. It is the difference between killing one guard and
+fighting the whole wing. The status bar says "+ can" when it is on, and the
+kill counts on the silent line of the bar.
 
 
 ------------------------------------------------------------------------------
@@ -315,12 +331,13 @@ Health starts at 100 and stops there. The vest starts at 50 percent and goes
 to 100. While you have any vest left it soaks 55 percent of every hit and
 wears down by what it soaked, so it runs out faster in a long fight.
 
-  Uzi                 the weapon, and 16 bullets
+  Uzi                 the weapon, and 50 rounds of 9mm
   Rocket launcher     the weapon, and 3 rockets
   Grenades            2 grenades
   Flash grenades      2 flash grenades
-  Bullets             8 bullets
-  Box of bullets      25 bullets
+  Revolver rounds     12 for the revolver
+  Uzi clips           50 of 9mm, two magazines
+  Box of ammunition   24 revolver rounds and 50 of 9mm
   Rockets             2 rockets
   Vest                25 percent
   Riot vest           50 percent
@@ -670,7 +687,8 @@ Tiles:
             g  grenades     f  flash grenades
             K  throwing knife, three throws in it
 
-  AMMO      a  bullets      A  box of bullets      o  rockets
+  AMMO      a  revolver rounds        U  uzi clips
+            A  box of ammunition, both calibres     o  rockets
 
   GEAR      v  vest         V  riot vest   m  first aid
             h  food         s  silencer

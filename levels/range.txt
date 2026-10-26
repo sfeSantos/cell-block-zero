@@ -2,7 +2,8 @@
 ; tiles: # stone  = brick  % cell wall  & metal  ~ rock  * poster
 ; doors: | steel  + bars  r/b/y locked  X exit switch
 ; start: N S W E   guards: 1 2 3
-; pickups: u uzi  l launcher  g grenades  f flashes  a bullets  A ammo box
+; pickups: u uzi  l launcher  g grenades  f flashes  a revolver rounds
+;          U uzi clips  A ammo box, both calibres
 ;          o rockets  v vest  V riot vest  m medkit  h food  s silencer
 ;          R/B/Y keys
 ; scenery: k chained skeleton  n hanged man  d dead prisoner

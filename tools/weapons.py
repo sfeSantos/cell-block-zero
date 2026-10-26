@@ -103,31 +103,56 @@ class View:
 
 
 # ----------------------------------------------------------------- the hands
+def lighten(c):
+    return tuple(min(255, int(v * 1.14)) for v in c[:3])
+
+
+def finger(v, x, y, w, h, base, shade):
+    """One finger round the front of the grip: a bar with the knuckle end
+    rounded off on the left, a lit top edge and the crease of the next one
+    under it."""
+    v.rect(x, y, w, h, base)
+    v.disc(x, y + h * 0.5, h * 0.5, base)
+    v.rect(x, y, w, 2, lighten(base))
+    v.rect(x - 1, y + h - 2, w + 1, 2, shade)
+
+
 def fists(v, spread=0):
+    """One hand on the weapon, the right, seen from behind and a little
+    above: the back of it on our side of the grip, the four fingers wrapped
+    round the front, the thumb laid across the top. The other hand is busy
+    with doors, lockers and the man on the floor."""
     cy = -8
-    v.disc(-15 - spread, cy - 14, 13, SKIN)
-    v.rect(-28 - spread, cy - 14, 26, 26, SKIN)
-    v.disc(13 + spread, cy - 10, 12, SKIN_LO)
-    v.rect(2 + spread, cy - 10, 24, 24, SKIN_LO)
+    hx = 2 + spread * 0.5
 
-    # knuckles on the near hand
-    for i in range(4):
-        v.rect(-13, cy - 32 + i * 9, 26, 6, SKIN)
-        v.rect(-13, cy - 27 + i * 9, 26, 2, SKIN_LO)
-    v.rect(-28 - spread, cy - 14, 5, 26, SKIN_HI)
+    # the back of the hand, with the two tendons that stand out on it
+    v.rect(hx - 4, cy - 30, 26, 42, SKIN)
+    v.rect(hx + 16, cy - 30, 6, 42, SKIN_HI)
+    v.disc(hx + 9, cy - 30, 13, SKIN)
+    v.rect(hx + 2, cy - 24, 2, 20, SKIN_HI)
+    v.rect(hx + 8, cy - 22, 2, 17, SKIN_HI)
 
-    v.rect(-32 - spread, cy + 10, 64 + spread * 2, 14, CUFF)
-    v.rect(-32 - spread, cy + 10, 64 + spread * 2, 3, CUFF_HI)
+    # the fingers, longest at the middle knuckle
+    for i, w in enumerate((22, 26, 25, 21)):
+        finger(v, hx - 18, cy - 28 + i * 9, w, 8, SKIN, SKIN_LO)
 
-    # what is left of the guard, across the knuckles and down one cuff
-    v.rect(-13, cy - 33, 11, 4, DRIED)
-    v.rect(-4, cy - 29, 5, 2, DRIED_LO)
-    v.rect(2, cy - 24, 8, 3, DRIED)
-    v.rect(-11, cy - 15, 6, 2, DRIED_LO)
-    v.rect(-26 - spread, cy - 6, 5, 7, DRIED)
-    v.rect(-24 - spread, cy + 2, 3, 4, DRIED_LO)
-    v.rect(16 + spread, cy - 2, 4, 5, DRIED_LO)
-    v.rect(-20 - spread, cy + 11, 7, 3, DRIED_LO)
+    # the thumb, over the top of them and pointing in
+    v.poly(((hx + 20, cy - 28), (hx + 12, cy - 38), (hx - 2, cy - 38),
+            (hx - 6, cy - 30), (hx + 6, cy - 24), (hx + 18, cy - 22)), SKIN_HI)
+    v.poly(((hx + 10, cy - 36), (hx - 2, cy - 35), (hx - 4, cy - 30),
+            (hx + 8, cy - 29)), SKIN)
+
+    # the wrist, and the sleeve of the shirt off the guard's back
+    v.rect(hx - 6, cy + 6, 28, 12, SKIN_LO)
+    v.rect(hx - 8, cy + 14, 32, 15, CUFF)
+    v.rect(hx - 8, cy + 14, 32, 3, CUFF_HI)
+
+    # what is left of the guard, specks of it rather than wounds
+    v.rect(hx + 4, cy - 26, 6, 2, DRIED)
+    v.rect(hx + 12, cy - 20, 3, 2, DRIED_LO)
+    v.rect(hx - 12, cy - 11, 5, 2, DRIED)
+    v.rect(hx - 2, cy + 8, 4, 2, DRIED_LO)
+    v.rect(hx + 2, cy + 16, 6, 2, DRIED_LO)
 
 
 def flash(v, x, y, s=1.0, quiet=False):
@@ -260,19 +285,22 @@ def thrower(v, frame, ball):
     v.grip()
 
     if frame == 2:
-        v.rect(-16, -138, 32, 92, SKIN)
-        v.rect(-16, -138, 6, 92, SKIN_HI)
-        v.rect(-16, -66, 32, 16, CUFF)
-        v.rect(-16, -66, 32, 3, CUFF_HI)
-        v.disc(0, -140, 18, SKIN)
-        for i in range(3):
-            v.rect(-15, -152 + i * 9, 30, 6, SKIN)
-            v.rect(-15, -147 + i * 9, 30, 2, SKIN_LO)
-        v.disc(-15, -136, 7, SKIN_LO)
-        v.rect(-14, -150, 10, 4, DRIED)
-        v.rect(-6, -144, 6, 3, DRIED_LO)
-        v.rect(-14, -120, 5, 9, DRIED)
-        v.rect(2, -104, 4, 6, DRIED_LO)
+        # the arm gone out after it, open hand at the end of the throw
+        v.rect(-14, -138, 28, 92, SKIN)
+        v.rect(8, -138, 6, 92, SKIN_HI)
+        v.rect(-14, -66, 28, 16, CUFF)
+        v.rect(-14, -66, 28, 3, CUFF_HI)
+        v.rect(-14, -152, 28, 20, SKIN)
+        v.disc(10, -148, 12, SKIN)
+
+        for i, w in enumerate((24, 26, 23)):
+            finger(v, -16, -158 + i * 9, w, 8, SKIN, SKIN_LO)
+
+        v.poly(((12, -154), (4, -164), (-8, -162), (-6, -154), (6, -150)),
+               SKIN_HI)
+        v.rect(-10, -156, 7, 3, DRIED)
+        v.rect(-12, -120, 5, 8, DRIED)
+        v.rect(2, -104, 4, 5, DRIED_LO)
         v.outline()
 
         return
@@ -280,15 +308,24 @@ def thrower(v, frame, ball):
     v.at(OX, OY - 58 * SC, SC, 0.0)
     ball(v)
     v.grip()
-    v.rect(-18, -34, 36, 44, SKIN)
-    v.rect(-18, -34, 5, 44, SKIN_HI)
-    v.disc(-16, -34, 11, SKIN)
-    v.disc(16, -34, 11, SKIN_LO)
-    v.rect(-16, -30, 9, 4, DRIED)
-    v.rect(-4, -22, 6, 3, DRIED_LO)
-    v.rect(8, -34, 5, 6, DRIED)
-    v.rect(-18, 2, 36, 14, CUFF)
-    v.rect(-18, 2, 36, 3, CUFF_HI)
+
+    # the hand closed round it: the back of the hand towards us, the fingers
+    # curled over the front, the thumb holding it down on the far side
+    v.rect(-14, -36, 28, 46, SKIN)
+    v.rect(8, -36, 6, 46, SKIN_HI)
+    v.disc(0, -36, 14, SKIN)
+
+    for i, w in enumerate((24, 27, 26, 22)):
+        finger(v, -16, -40 + i * 9, w, 8, SKIN, SKIN_LO)
+
+    v.poly(((14, -38), (6, -48), (-6, -47), (-8, -39), (4, -33)), SKIN_HI)
+    v.rect(-6, -44, 8, 3, SKIN)
+
+    v.rect(-10, -34, 6, 2, DRIED)
+    v.rect(2, -26, 4, 2, DRIED_LO)
+    v.rect(-4, -6, 5, 2, DRIED)
+    v.rect(-16, 6, 32, 14, CUFF)
+    v.rect(-16, 6, 32, 3, CUFF_HI)
     v.outline()
 
 
