@@ -11,8 +11,22 @@ local Enemy = {}
 Enemy.__index = Enemy
 
 -- radius is what a guard bumps into walls and each other with. hit is the
--- figure a bullet has to be pointed at, cut to the shoulders of the sprite as
--- it is drawn: a shot past him misses, however close it looked.
+-- figure a bullet has to be pointed at, and it is taken off the art rather
+-- than guessed: a shot past him misses, however close it looked.
+--
+-- A sprite is drawn ih / depth pixels wide and one tile across the view is
+-- (iw / 2) / (tan(fov / 2) * depth) pixels, so the 64 px cell covers
+-- 2 * tan(34 degrees) * ih / iw tiles, 0.759 of a tile on a 16 by 9 screen,
+-- at any distance. The figure inside the cell is 37 px of 64 for a guard,
+-- 39 for a sergeant, 43 for a riot captain, which puts his shoulders 0.219,
+-- 0.231 and 0.255 of a tile from his middle. hit is three quarters of that,
+-- the chest rather than the outline, so the elbow and the edge of the
+-- shoulder do not count.
+--
+-- The dog is the other way round. It is drawn nose to tail, 63 px of the 64,
+-- and the billboard shows that whichever way it is facing, so matching the
+-- drawing would let a round that passes in front of its nose kill it. It
+-- keeps the number it had.
 Enemy.TIERS = {
     {
         key = "g1",
@@ -20,7 +34,7 @@ Enemy.TIERS = {
         hp = 28,
         speed = 1.95,
         radius = 0.32,
-        hit = 0.26,
+        hit = 0.165,
         sight = 15,
         fov = 1.05,
         hearing = 8,
@@ -48,7 +62,7 @@ Enemy.TIERS = {
         hp = 48,
         speed = 2.35,
         radius = 0.33,
-        hit = 0.27,
+        hit = 0.175,
         sight = 18,
         fov = 1.25,
         hearing = 10,
@@ -78,7 +92,7 @@ Enemy.TIERS = {
         hp = 85,
         speed = 2.7,
         radius = 0.35,
-        hit = 0.29,
+        hit = 0.19,
         sight = 22,
         fov = 1.45,
         hearing = 12,

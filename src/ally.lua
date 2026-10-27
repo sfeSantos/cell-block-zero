@@ -33,7 +33,10 @@ function Ally.new(x, y)
     self.angle = love.math.random() * math.pi * 2
     self.hp = Ally.HP
     self.radius = Ally.RADIUS
-    self.hit = 0.26
+    -- the same rule as a guard, from the same art: a prisoner is 31 px of
+    -- the 64 px cell, so his shoulders are 0.184 of a tile from his middle
+    -- and three quarters of that is the chest. See Enemy.TIERS.
+    self.hit = 0.14
     self.alive = true
     self.freed = false
     self.state = "caged"
