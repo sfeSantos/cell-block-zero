@@ -12,7 +12,7 @@ Lights out an hour ago, and the guard who let himself into your cell was not
 there to talk. He is still on the floor of it, and everything you own came
 off him: a hatchet, a revolver, a throwing knife and a vest, torn and half as
 good as it was.
-The way out is three blocks away and the sun comes up in a few hours.
+The way out is eight blocks away and the sun comes up in a few hours.
 
 ## Running
 
@@ -192,12 +192,31 @@ two are past every barrel in the game.
 
 ## The blocks
 
-Three of them, played in order. A block only opens once the one before it has
+Eight of them, played in order, and the last one ends the game:
+
+1. D Block, the cells and the shops below them
+2. Laundry and workshops, the service floor
+3. The yard and the gatehouse, open ground and the riot squad
+4. The kitchens, the cold store and the loading dock
+5. The infirmary, the wards and the morgue
+6. Administration, the offices and the governor's wing
+7. The roof, the walkways and the tanks
+8. The wall, the walk along the top of it and the gate
+
+A block only opens once the one before it has
 been finished, which means walking out of its exit: the menu will not let you
 pick a block you have not earned, and what you have opened is kept in the save
 directory between sessions. Health, armour, weapons and ammunition carry from
 one block to the next. Dying puts you back at the start of the block you are
 in, with the loadout you entered it with.
+
+Every block is a text file in `levels/`, and the game takes the list of them
+off the folder: a ninth one is a file and a `next` line in the eighth, with no
+code to change. `lua tools/levelcheck.lua levels/0*.txt` reads them the way
+the game does and says whether they hold together, which is mostly about the
+locked doors: a coloured door has to be the only way into what it shuts off,
+the way out has to cost a key, and a key is never put behind the door it
+opens.
 
 Walking out of a block stops at a page that adds it up before the next one
 starts: how long it took, how many of each rank went down and how many were

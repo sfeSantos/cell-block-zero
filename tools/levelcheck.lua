@@ -3,7 +3,7 @@
 -- behind the door it opens is a dead end, a pocket of floor nobody can reach
 -- is wasted work. Run it from the root of the repository:
 --
---     lua tools/levelcheck.lua levels/*.txt
+--     lua tools/levelcheck.lua levels/0*.txt
 --
 -- It prints a line per block and the counts that make up the difficulty
 -- ramp, and leaves with 1 if anything is wrong.
@@ -337,7 +337,7 @@ end
 
 local files = {...}
 if #files == 0 then
-    print("lua tools/levelcheck.lua levels/*.txt")
+    print("lua tools/levelcheck.lua levels/0*.txt")
     os.exit(2)
 end
 

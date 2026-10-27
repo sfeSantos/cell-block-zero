@@ -215,11 +215,16 @@ bullets, the throwing knife off his belt and a vest, torn in the scuffle and
 half as good as it was. The sun
 comes up in a few hours and you intend to be a long way from here.
 
-Out through three blocks:
+Out through eight blocks, and the last one ends the game:
 
   1. D Block, the cells, the wings and the stairwell
   2. Laundry and workshops, the service floor
   3. The yard and the gatehouse, open ground and the riot squad
+  4. The kitchens, the cold store and the loading dock
+  5. The infirmary, the wards and the morgue
+  6. Administration, the offices and the governor's wing
+  7. The roof, the walkways and the tanks
+  8. The wall, the walk along the top of it and the gate
 
 Each block ends at an exit tile, a door or a gate you press space at. Walking
 out of a block opens the next one in the menu, and nothing else does: you
