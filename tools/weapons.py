@@ -6,6 +6,14 @@ here lines up with the rest of the view. Same look as the guards: flat
 colours, two tone shading, a dark line around the silhouette.
 
     python3 tools/weapons.py assets/views
+
+This art exists twice. What this script writes is what you see when the files
+are in assets/views, and src/art.lua draws the same frames in code for when
+they are not. Change a hand here and the game looks different with an empty
+assets folder than it does with a full one, and nobody finds out until
+somebody clears the folder. So a change to a view goes in both, in the same
+sitting: this file and the view builders in src/art.lua, from art.VIEW_W
+down.
 """
 
 import math

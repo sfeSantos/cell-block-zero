@@ -890,6 +890,11 @@ local function blob(c)
 end
 
 
+-- The weapon in your hands, drawn twice. Everything from here down to
+-- art.VIEW_ORDER is the fallback, used for whatever has no file in
+-- assets/views, and tools/weapons.py writes the files that take its place.
+-- The two have to be changed together or the game stops looking the same with
+-- an empty assets folder, which is the one thing the fallback is for.
 art.VIEW_W = 200
 art.VIEW_H = 150
 art.VIEW_COLS = 4

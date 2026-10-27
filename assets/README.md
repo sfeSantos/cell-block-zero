@@ -39,6 +39,12 @@ grip at the bottom of the cell. Weapons: `hatchet` and `launcher`, `grenades`,
 and fourth are with the silencer on), and `throat`, `head`, `neck` are the four
 frames of each execution.
 
+These are the one place the game draws the same thing twice. The files here
+are written by `tools/weapons.py`, and `src/art.lua` draws the same frames in
+code for whichever file is missing. They are meant to match, so a change to a
+weapon in your hands belongs in both, and a change to only one of them shows
+up as the game looking different with this folder empty.
+
 ## assets/flats
 
 The ground, tiled across the floor and the ceiling of every block, 64 by 64
