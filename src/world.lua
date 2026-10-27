@@ -345,7 +345,15 @@ function World:spreadGuards()
 end
 
 -- Keys are never left lying about. Each one is on a guard, in a locker, or
--- behind a panel in a wall, whichever the level file asks for.
+-- behind a panel in a wall, whichever the level file asks for, and always as
+-- far from the way in as it can be put.
+--
+-- A key is never put behind the door it opens, which is the one thing that
+-- turns a block into a dead end. The reachable set is worked out with
+-- nothing in hand, the keys that can be had from there are placed, and then
+-- it is worked out again with those in hand, until there is nothing left to
+-- place. A colour that cannot be reached at all is left unplaced and said
+-- out loud, because the level file is wrong.
 function World:placeKeys()
     local level = self.level
     local sx, sy = level.spawn.x, level.spawn.y
@@ -363,14 +371,26 @@ function World:placeKeys()
         return best
     end
 
-    for _, colour in ipairs({"red", "blue", "yellow"}) do
-        local where = level.keyPlace and level.keyPlace[colour]
+    -- a wall you have to stand in front of: the locker, the panel
+    local function faceable(cx, cy, open)
+        for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+            local j = level:index(cx + d[1], cy + d[2])
+            if j and open[j] then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    local function place(colour, where, open)
         local item = colour .. "key"
 
         if where == "guard" then
             local pool = {}
             for _, e in ipairs(self.enemies) do
-                if e.alive and not e:isDog() and not e.carries then
+                local i = level:index(math.floor(e.x) + 1, math.floor(e.y) + 1)
+                if e.alive and not e:isDog() and not e.carries and i and open[i] then
                     pool[#pool + 1] = e
                 end
             end
@@ -382,11 +402,13 @@ function World:placeKeys()
             if e then
                 e.carries = item
                 e.keyName = colour
+
+                return true
             end
         elseif where == "locker" then
             local pool = {}
             for _, box in ipairs(level.lockers) do
-                if not box.hasKey then
+                if not box.hasKey and faceable(box.x, box.y, open) then
                     pool[#pool + 1] = box
                 end
             end
@@ -398,11 +420,13 @@ function World:placeKeys()
             if box then
                 box.hasKey = true
                 box.loot[#box.loot + 1] = item
+
+                return true
             end
         elseif where == "secret" then
             local pool = {}
             for _, panel in ipairs(level.secrets) do
-                if not panel.hasKey then
+                if not panel.hasKey and faceable(panel.x, panel.y, open) then
                     pool[#pool + 1] = panel
                 end
             end
@@ -421,11 +445,46 @@ function World:placeKeys()
                             and level:areaAt(cx, cy) ~= level:areaOf(sx, sy) then
                         self:spawnItem(item, cx - 0.5, cy - 0.5)
 
-                        break
+                        return true
                     end
                 end
             end
         end
+
+        return false
+    end
+
+    local todo = {}
+    for _, colour in ipairs({"red", "blue", "yellow"}) do
+        if level.keyPlace and level.keyPlace[colour] then
+            todo[#todo + 1] = colour
+        end
+    end
+
+    local held = {}
+    while #todo > 0 do
+        local open = level:reachable(sx, sy, held)
+        local done
+
+        for n, colour in ipairs(todo) do
+            if place(colour, level.keyPlace[colour], open) then
+                held[colour] = true
+                done = n
+
+                break
+            end
+        end
+
+        if not done then
+            for _, colour in ipairs(todo) do
+                print(string.format("level %s: nowhere to put the %s key that is not behind the %s door",
+                    level.path, colour, colour))
+            end
+
+            break
+        end
+
+        table.remove(todo, done)
     end
 end
 
