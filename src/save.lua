@@ -59,7 +59,11 @@ local PLAYER_KEYS = {"x", "y", "angle", "pitch", "health", "armor", "weapon",
     "endlessAmmo"}
 
 local ENEMY_KEYS = {"x", "y", "angle", "hp", "alive", "state", "frame",
-    "asleep", "awake", "carries", "keyName", "patrol", "dummy"}
+    "asleep", "awake", "carries", "keyName", "patrol", "dummy",
+    -- what is in his gun, what is in his pockets, and the locker he is
+    -- walking to or has already turned out
+    "mag", "spares", "reloadT", "looted", "supplyX", "supplyY", "raided",
+    "gaveUp", "wx", "wy"}
 
 local ALLY_KEYS = {"x", "y", "angle", "hp", "alive", "freed", "state",
     "frame", "kills"}
@@ -151,7 +155,7 @@ function save.snapshot(world, path, difficulty, elapsed)
         end
 
         data.lockers[i] = {opened = box.opened, stocked = box.stocked,
-            loot = loot}
+            raided = box.raided, loot = loot}
     end
 
     for i, panel in ipairs(level.secrets) do
@@ -274,6 +278,13 @@ function save.restore(data, audio)
             e.anim = 1
         end
 
+        if e.alive and e.state == "supply" and e.supplyX then
+            local box = level:lockerAt(e.supplyX, e.supplyY)
+            if box then
+                box.claimedBy = e
+            end
+        end
+
         world.enemies[#world.enemies + 1] = e
     end
 
@@ -325,6 +336,7 @@ function save.restore(data, audio)
             end
 
             box.stocked = row.stocked
+            box.raided = row.raided
             if row.opened and not box.opened then
                 level:openLocker(box)
             end

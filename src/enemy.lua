@@ -14,6 +14,12 @@ Enemy.__index = Enemy
 -- figure a bullet has to be pointed at, and it is taken off the art rather
 -- than guessed: a shot past him misses, however close it looked.
 --
+-- mag is how many rounds he has before he has to reload, reload is how long
+-- that takes, spares is how many magazines he is carrying on top of the one
+-- in the gun, and dry is the chance, rolled once when the block loads, that
+-- he is carrying none at all. A man who runs dry leaves the fight to find
+-- more, which is the only reason a guard ever walks away from you.
+--
 -- A sprite is drawn ih / depth pixels wide and one tile across the view is
 -- (iw / 2) / (tan(fov / 2) * depth) pixels, so the 64 px cell covers
 -- 2 * tan(34 degrees) * ih / iw tiles, 0.759 of a tile on a 16 by 9 screen,
@@ -45,6 +51,10 @@ Enemy.TIERS = {
         burst = {1, 2},
         burstGap = 0.16,
         fireGap = {0.85, 1.5},
+        mag = 8,
+        reload = 2.2,
+        spares = {1, 2},
+        dry = 0.25,
         turn = 3.4,
         prefer = 5.5,
         strafe = 0.35,
@@ -73,6 +83,10 @@ Enemy.TIERS = {
         burst = {3, 5},
         burstGap = 0.10,
         fireGap = {0.75, 1.15},
+        mag = 14,
+        reload = 1.9,
+        spares = {1, 3},
+        dry = 0.18,
         turn = 4.2,
         prefer = 7.0,
         strafe = 0.6,
@@ -103,6 +117,10 @@ Enemy.TIERS = {
         burst = {2, 3},
         burstGap = 0.22,
         fireGap = {0.55, 0.9},
+        mag = 15,
+        reload = 1.7,
+        spares = {2, 3},
+        dry = 0.12,
         turn = 5.0,
         prefer = 4.5,
         strafe = 0.8,
@@ -186,6 +204,17 @@ function Enemy.new(tier, x, y, scale)
     self.lastX, self.lastY = x, y
     self.shotT = t.bite and rnd(0, 0.2) or rnd(0, 0.6)
     self.burstLeft = 0
+    self.mag = t.mag or 0
+    self.spares = 0
+    self.reloadT = 0
+    self.looted = nil
+    self.supplyX, self.supplyY = nil, nil
+
+    if t.mag then
+        self.spares = love.math.random() < t.dry and 0
+            or math.floor(rnd(t.spares[1], t.spares[2] + 0.999))
+    end
+
     self.flashT = 0
     self.painT = 0
     self.blind = 0
@@ -595,6 +624,33 @@ function Enemy:think(dt, world)
                 self.stateT = t.giveUp
             end
         end
+    elseif self.state == "supply" then
+        local box = self.supplyX and world.level:lockerAt(self.supplyX, self.supplyY)
+        local dx, dy = self.wx - self.x, self.wy - self.y
+
+        if not box or box.opened or box.raided then
+            -- somebody got there first
+            self:seekSupply(world)
+        elseif dx * dx + dy * dy < 0.4 then
+            if world:raidLocker(box, self) > 0 then
+                self.raided = true
+                self.mag = 0
+                self:outOfRounds(world)
+                self.state = self.seeing and "fight" or "hunt"
+                self.stateT = t.giveUp
+            else
+                self:seekSupply(world)
+            end
+        elseif self.stateT <= 0 then
+            self:seekSupply(world)
+        end
+    elseif self.state == "spent" then
+        if self.stateT <= 0 then
+            -- a locker may have come free while he kept his head down
+            if not self:seekSupply(world) then
+                self.stateT = 5
+            end
+        end
     end
 end
 
@@ -807,10 +863,23 @@ function Enemy:desire(dt, world)
         return dx, dy, 0.5
     end
 
-    if self.state == "cover" then
+    if self.state == "cover" or self.state == "supply" then
         local dx, dy = self:navTowards(world, self.wx, self.wy)
 
         return dx, dy, 1
+    end
+
+    if self.state == "spent" then
+        -- nothing to shoot with: away from him, and back towards his own
+        -- patch once there is room between them
+        local dx, dy = self.x - p.x, self.y - p.y
+        if dx * dx + dy * dy > 81 then
+            local nx, ny = self:navTowards(world, self.home.x, self.home.y)
+
+            return nx, ny, 0.8
+        end
+
+        return dx, dy, 1.15
     end
 
     if self.state == "hunt" then
@@ -970,6 +1039,62 @@ function Enemy:act(dt, world)
     self:gunplay(dt, world, math.abs(wrap(want - self.angle)))
 end
 
+-- Somewhere with rounds in it, and nobody else already walking to it. If
+-- there is nowhere, he is no longer a shooter: he shouts the block awake and
+-- then keeps out of the way, which is the most dangerous thing left to him.
+function Enemy:seekSupply(world)
+    -- whatever he was walking to is somebody else's again
+    if self.supplyX and not self.raided then
+        local old = world.level:lockerAt(self.supplyX, self.supplyY)
+        if old and old.claimedBy == self then
+            old.claimedBy = nil
+        end
+    end
+
+    local box, ax, ay = world:supplyFor(self)
+
+    if box then
+        box.claimedBy = self
+        self.supplyX, self.supplyY = box.x, box.y
+        self.wx, self.wy = ax, ay
+        self.state = "supply"
+        self.stateT = 25
+        self.pauseT = 0
+        self.path = nil
+        self.pathTo = nil
+
+        return true
+    end
+
+    self.state = "spent"
+    self.stateT = 6
+
+    if not self.gaveUp then
+        self.gaveUp = true
+        world:raiseAlarm()
+    end
+
+    return false
+end
+
+-- The magazine is empty. Either he has another one on him, which costs him
+-- the seconds you are meant to move in, or he has not, and then he is no
+-- longer a shooter and has to go and do something about it.
+function Enemy:outOfRounds(world)
+    self.burstLeft = 0
+
+    if self.spares > 0 then
+        self.reloadT = self.t.reload
+        world.audio.play("click", 0.35)
+
+        return
+    end
+
+    world.audio.play("dry", 0.4)
+    world.audio.play(self.t.sound, 0.45)
+    self:seekSupply(world)
+end
+
 function Enemy:gunplay(dt, world, aimOff)
     local t = self.t
     self.shotT = math.max(0, self.shotT - dt)
@@ -977,6 +1102,22 @@ function Enemy:gunplay(dt, world, aimOff)
 
     if self.state ~= "fight" and self.state ~= "cover" then
         self.burstLeft = 0
+    end
+
+    if self.reloadT > 0 then
+        self.reloadT = self.reloadT - dt
+        if self.reloadT <= 0 then
+            self.reloadT = 0
+            self.mag = t.mag
+            self.spares = self.spares - 1
+            if self.looted and #self.looted > 0 then
+                table.remove(self.looted, 1)
+            end
+
+            self.shotT = math.max(self.shotT, 0.25)
+        end
+
+        return
     end
 
     if self.burstLeft > 0 then
@@ -987,6 +1128,16 @@ function Enemy:gunplay(dt, world, aimOff)
             self:shoot(world)
             self.burstLeft = self.burstLeft - 1
             self.shotT = t.burstGap
+
+            if t.mag then
+                self.mag = self.mag - 1
+                if self.mag <= 0 then
+                    self:outOfRounds(world)
+
+                    return
+                end
+            end
+
             if self.burstLeft <= 0 then
                 self.shotT = pick(t.fireGap)
             end
@@ -996,7 +1147,16 @@ function Enemy:gunplay(dt, world, aimOff)
     end
 
     if self.seeing and self.state == "fight" and self.shotT <= 0 and aimOff < 0.22 then
+        if t.mag and self.mag <= 0 then
+            self:outOfRounds(world)
+
+            return
+        end
+
         self.burstLeft = math.floor(rnd(t.burst[1], t.burst[2] + 0.999))
+        if t.mag then
+            self.burstLeft = math.min(self.burstLeft, self.mag)
+        end
 
         return
     end
@@ -1187,6 +1347,25 @@ function Enemy:die(world, silent)
         self.carries = nil
     end
 
+    -- what he took out of a locker and never fired is on the floor where he
+    -- fell, and the locker itself comes open with whatever was left in it
+    if self.looted then
+        for i, item in ipairs(self.looted) do
+            world:spawnItem(item, self.x + (i - 1) * 0.2, self.y)
+        end
+
+        self.looted = nil
+    end
+
+    if self.raided and self.supplyX then
+        local box = world.level:lockerAt(self.supplyX, self.supplyY)
+        if box then
+            world:spillLocker(box)
+        end
+
+        self.raided = nil
+    end
+
     -- most of them are carrying nothing worth picking up
     local roll = love.math.random()
     local acc = 0
@@ -1234,6 +1413,8 @@ function Enemy:animate(dt)
         self.frame = "pain"
     elseif self.flashT > 0 then
         self.frame = "fire"
+    elseif self.reloadT > 0 then
+        self.frame = self.moving and ("walk" .. (math.floor(self.walkT % 4) + 1)) or "idle"
     elseif self.burstLeft > 0 or (self.seeing and self.state == "fight") then
         self.frame = "aim"
     elseif self.moving then

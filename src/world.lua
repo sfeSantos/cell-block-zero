@@ -488,6 +488,137 @@ function World:placeKeys()
     end
 end
 
+-- What a guard can use out of a locker. He takes rounds and leaves the vest,
+-- the medkit and anything else in there, keys included.
+World.GUARD_AMMO = {bullets = true, clips = true, ammobox = true}
+
+-- The walkable tile in front of a locker, the one he has to stand on to get
+-- at it. Nearest to whoever is asking.
+function World:lockerFront(box, fromX, fromY)
+    local level = self.level
+    local bx, by, bestD
+
+    for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+        local cx, cy = box.x + d[1], box.y + d[2]
+        local i = level:index(cx, cy)
+        if i and not level.wall[i] and not level.exit[i] then
+            local x, y = cx - 0.5, cy - 0.5
+            local dist = (x - fromX) ^ 2 + (y - fromY) ^ 2
+            if not bestD or dist < bestD then
+                bx, by, bestD = x, y, dist
+            end
+        end
+    end
+
+    return bx, by
+end
+
+local function lockerAmmo(box)
+    local n = 0
+    for _, item in ipairs(box.loot) do
+        if World.GUARD_AMMO[item] then
+            n = n + 1
+        end
+    end
+
+    return n
+end
+
+-- How far a guard will go for rounds, in tiles of walking. Further than this
+-- and he is better off shouting for help than touring the block.
+World.SUPPLY_REACH = 28
+
+-- The locker a guard who has run dry should walk to: rounds in it, nobody
+-- else already on their way, and a path he can actually take without
+-- crossing the whole prison. Nearest first, and the path is only worked out
+-- for the ones worth working it out for.
+function World:supplyFor(enemy)
+    local level = self.level
+    local want = {}
+
+    for _, box in ipairs(level.lockers) do
+        local taken = box.claimedBy and box.claimedBy.alive and box.claimedBy ~= enemy
+        if not box.opened and not box.raided and not taken and lockerAmmo(box) > 0 then
+            local x, y = self:lockerFront(box, enemy.x, enemy.y)
+            if x then
+                want[#want + 1] = {box = box, x = x, y = y,
+                    d = (x - enemy.x) ^ 2 + (y - enemy.y) ^ 2}
+            end
+        end
+    end
+
+    table.sort(want, function(a, b)
+        return a.d < b.d
+    end)
+
+    for _, row in ipairs(want) do
+        if row.d > World.SUPPLY_REACH * World.SUPPLY_REACH then
+            break
+        end
+
+        local path = nav.path(level, math.floor(enemy.x) + 1, math.floor(enemy.y) + 1,
+            math.floor(row.x) + 1, math.floor(row.y) + 1, World.SUPPLY_REACH)
+        if #path > 0 then
+            return row.box, row.x, row.y
+        end
+    end
+
+    return nil
+end
+
+-- He turns the locker out for rounds and leaves the rest of it alone. The
+-- door stays shut, so it is still yours to open: what you have lost is what
+-- he is now carrying, and you only get that back by taking it off him.
+function World:raidLocker(box, enemy)
+    local kept, took = {}, {}
+
+    for _, item in ipairs(box.loot) do
+        if World.GUARD_AMMO[item] then
+            took[#took + 1] = item
+        else
+            kept[#kept + 1] = item
+        end
+    end
+
+    if #took == 0 then
+        return 0
+    end
+
+    box.loot = kept
+    box.raided = true
+    box.claimedBy = nil
+
+    enemy.looted = enemy.looted or {}
+    for _, item in ipairs(took) do
+        enemy.looted[#enemy.looted + 1] = item
+    end
+
+    enemy.spares = enemy.spares + #took
+    self.audio.play("door", 0.4)
+    self:noise(box.x - 0.5, box.y - 0.5, 4, enemy)
+
+    return #took
+end
+
+-- A guard who got to a locker first and then went down: it opens, and what
+-- he did not take is on the floor in front of it. From across the room you
+-- can see which ones have been got at.
+function World:spillLocker(box)
+    if box.opened or not self.level:openLocker(box) then
+        return false
+    end
+
+    local x, y = self:lockerFront(box, box.x - 0.5, box.y - 0.5)
+    for i, item in ipairs(box.loot) do
+        local ox = (i - 1.5) * 0.22
+        self:spawnItem(item, (x or box.x - 0.5) + ox, y or box.y - 0.5)
+    end
+
+    box.loot = {}
+
+    return true
+end
+
 function World:openLocker(box)
     if not self.level:openLocker(box) then
         return false
