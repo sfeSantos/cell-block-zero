@@ -422,7 +422,14 @@ function Enemy:sense(dt, world)
             cone = cone * 1.35
         end
 
-        if off < cone or dist < 1.8 then
+        -- Close up he notices you whatever he happens to be looking at,
+        -- but not through the back of his own head. A man walking his round
+        -- with his mind elsewhere can be come up behind, which is the whole
+        -- point of the knife. Once he is awake the circle closes again,
+        -- because by then he is listening for you.
+        local near = dist < 1.8 and (self.awake or not self:behind(p.x, p.y))
+
+        if off < cone or near then
             see = world.level:lineOfSight(self.x, self.y, p.x, p.y)
         end
     end
