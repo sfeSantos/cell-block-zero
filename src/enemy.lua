@@ -316,14 +316,6 @@ function Enemy:distract()
     self.pauseT = 0.6
 end
 
-function Enemy:unaware()
-    if self.asleep then
-        return self.alive
-    end
-
-    return self.alive and not self.awake and self.state == "idle"
-end
-
 -- Shaken awake by a noise, a shout or a bullet. He is on his feet but good
 -- for nothing for a moment, which is usually the moment that decides it.
 function Enemy:wake(world, x, y)
