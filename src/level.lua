@@ -496,6 +496,64 @@ function Level:navOpen(cx, cy)
     return self.wall[i] == nil
 end
 
+-- Walkable by the player carrying the keys in `keys`. A locked door he has no
+-- key for is a wall; a panel in a wall is not, because he can push it from
+-- either side. Lockers and the exit switch are solid: you stand in front of
+-- them, you do not walk through them.
+function Level:walkable(cx, cy, keys)
+    local i = self:index(cx, cy)
+    if not i or self.exit[i] then
+        return false
+    end
+
+    if self.secret[i] then
+        return true
+    end
+
+    if self.wall[i] then
+        return false
+    end
+
+    local d = self.door[i]
+    if d and d.lock then
+        return keys ~= nil and keys[d.lock] == true
+    end
+
+    return true
+end
+
+-- Every tile reachable on foot from a spot with a given bunch of keys, as a
+-- set of tile indices. The key placing uses it so a key is never put behind
+-- the door it opens, and tools/levelcheck.lua uses it to say whether a locked
+-- door is a gate or scenery.
+function Level:reachable(x, y, keys)
+    local seen = {}
+    local cx, cy = math.floor(x) + 1, math.floor(y) + 1
+    if not self:walkable(cx, cy, keys) then
+        return seen
+    end
+
+    local queue = {{cx, cy}}
+    seen[self:index(cx, cy)] = true
+
+    local head = 1
+    while head <= #queue do
+        local t = queue[head]
+        head = head + 1
+
+        for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+            local nx, ny = t[1] + d[1], t[2] + d[2]
+            local j = self:index(nx, ny)
+            if j and not seen[j] and self:walkable(nx, ny, keys) then
+                seen[j] = true
+                queue[#queue + 1] = {nx, ny}
+            end
+        end
+    end
+
+    return seen
+end
+
 -- Walkable while walking a round. A guard with nothing to worry about does not
 -- unlock cells or go through barred doors, he stays in the corridors.
 function Level:patrolOpen(cx, cy)

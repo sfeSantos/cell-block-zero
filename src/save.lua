@@ -13,7 +13,7 @@ local nav = require("src.nav")
 local save = {}
 
 save.FILE = "save.lua"
-save.VERSION = 1
+save.VERSION = 2
 
 local function encode(v)
     local t = type(v)

@@ -13,7 +13,26 @@ local Level = require("src.level")
 local Player = require("src.player")
 local console = require("src.console")
 
-local LEVELS = {"levels/01.txt", "levels/02.txt", "levels/03.txt"}
+local RANGE = "levels/range.txt"
+
+-- Every text file in levels/ is a block, in the order their names sort, and
+-- the shooting range is not one of them. Nothing in here names a block, so a
+-- new one is a file and a next line in the file before it.
+local function blockList()
+    local out = {}
+    for _, name in ipairs(love.filesystem.getDirectoryItems("levels")) do
+        local path = "levels/" .. name
+        if name:match("%.txt$") and path ~= RANGE then
+            out[#out + 1] = path
+        end
+    end
+
+    table.sort(out)
+
+    return out
+end
+
+local LEVELS = blockList()
 local NAMES = {}
 
 local state = "menu"
@@ -31,7 +50,6 @@ local endT = 0
 local stats = {time = "0:00", kills = 0, takedowns = 0}
 local startTime = 0
 
-local RANGE = "levels/range.txt"
 local WEB = love._os == "Web"
 local menuMove, menuPick, refreshExtras
 

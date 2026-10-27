@@ -1,0 +1,54 @@
+; Cell Block Zero level file
+; tiles: # stone  = brick  % cell wall  & metal  ~ rock  * poster
+;        L locker (press space)   / a section of wall that slides back
+; doors: | steel  + bars  r/b/y locked  X exit switch
+; start: N S W E   guards: 1 2 3   4 dog   z asleep   Z sergeant asleep
+; pickups: u uzi  l launcher  g grenades  f flashes  a revolver rounds
+;          U uzi clips  A ammo box, both calibres
+;          o rockets  v vest  V riot vest  m medkit  h food  s silencer
+;          K throwing knife, three throws in it
+;          T leg trap, set it on the floor with B
+; scenery: k chained skeleton  n hanged man  d dead prisoner
+;          c remains and blood   p a prisoner who is still alive
+;          G the guard you killed, on your cell floor
+; keys:    redkey/bluekey/yellowkey say where the key is: guard, locker
+;          or secret
+
+name = The roof
+next = 08.txt
+brief = Open air, a long way up, and nothing between the walkways but the drop. The lift motor room is red, the tanks past it are blue, and the north stair down to the wall is yellow. One of the plant rooms up here has a wall that is not a wall.
+ceiling = 0.04,0.05,0.09
+floor = 0.16,0.16,0.17
+sky = true
+redkey = guard
+bluekey = locker
+yellowkey = secret
+
+[map]
+##########################################################
+#..S............#....L........#.............#..41......L.#
+#...............#.....1.......#....23.......#............#
+#..~~~~~~.......#..&&&&&&&&...#..~~~~~~~~~..#..~~~~~~~...#
+#..~....~....3..#..&&&&&&&&...#..~.......~..#..~.....~...#
+#..~.a..|.......#.............#..~..U....~..#..~..3..~...#
+#..~~~~~~.......#....3........#..~~~~.~~~~..#..~~.~~~~...#
+#...............#.............#.............#............#
+#.....3.........#..~~~~~~~~...#....3........#.....2......#
+#...............#..~......~...b.............#............#
+#..3............#..~.L..2.~...#..~~~~/~~~~..#..&&&&&&&...#
+#...............r..~~~~.~~~...#..~.......~..#..&&&&&&&...#
+#...............#.............#..~.......~..#............#
+#..~~~~~~~~~~...#....a........#..~~~~~~~~~..y....4.......#
+#..~........~...#.............#.............#............#
+#..~..z.....|...#..&&&&&&&&...#....3........#...A........#
+#..~........~...#..&&&&&&&&...#.............#............X
+#..~~~~~~~~~~...#.............#..~~~~~~~~~..#.41.........X
+#...............#....2........#..~.......~..#............#
+#....2..........#.............#..~.V...a.~..#...~~~~~~...#
+#...............#..~~~.~~~~...#..~~~~~.~~~..#...~....~...#
+#..U............#..~......~...#.............#...~.m..~...#
+#...............#..~.4....~...#...21........#...~~.~~~...#
+#..h............#..~~~~~~~~...#.............#......12....#
+#...............#.....V.......#.............#............#
+##########################################################
+[end]
