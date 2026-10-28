@@ -8,9 +8,12 @@ local art = require("src.art")
 
 local rc = {}
 
-rc.fov = math.rad(68)
+-- How wide the camera plane is, which is what decides the field of view.
+-- rc.resize works it out from the shape of the canvas rather than fixing it,
+-- and rc.fov is the horizontal angle that comes out, kept for printing.
+rc.fov = 0
 
-local canvas, iw, ih, scale
+local canvas, iw, ih, scale, plane
 local wallBatch, spriteBatch
 local wallQuad, spriteQuad
 local zbuffer = {}
@@ -87,10 +90,28 @@ function rc.load()
     ceilMesh = gradientMesh(true)
 end
 
+-- The picture is drawn small and blown up by a whole number, which is what
+-- keeps the pixels square. This is the height we aim the small one at: 1080p
+-- comes out 640 by 360 blown up three times and 1440p 854 by 480 blown up
+-- three, where before both were about 240 lines blown up four and six. Four
+-- times the pixels costs 8 % of a frame, measured. The floor of 2 keeps a
+-- small window as chunky as it has always been.
+local TARGET_LINES = 420
+
 function rc.resize(w, h)
-    scale = math.max(2, math.floor(h / 240))
+    scale = math.max(2, math.floor(h / TARGET_LINES + 0.5))
     iw = math.ceil(w / scale)
     ih = math.ceil(h / scale)
+
+    -- A wall one tile tall is ih / dist pixels and one tile across the view is
+    -- iw / (2 * plane * dist). Taking the plane off the shape of the canvas
+    -- makes those the same number, so nothing is stretched on a wide screen
+    -- and one sprite cell is one tile, which is what src/art.lua says it is.
+    -- The vertical angle is the fixed one, 2 * atan(0.5) or about 53 degrees,
+    -- and a wider screen sees further to the sides instead of seeing the same
+    -- thing stretched.
+    plane = 0.5 * iw / ih
+    rc.fov = 2 * math.atan(plane)
 
     if canvas then
         canvas:release()
@@ -143,8 +164,7 @@ local function drawFlats(world, player, horizon)
 
     local lv = world.level
     local dirx, diry = math.cos(player.angle), math.sin(player.angle)
-    local halfFov = math.tan(rc.fov * 0.5)
-    local planex, planey = -diry * halfFov, dirx * halfFov
+    local planex, planey = -diry * plane, dirx * plane
     local lx, ly = dirx - planex, diry - planey
     local rx, ry = dirx + planex, diry + planey
     local light = player.muzzle or 0
@@ -221,8 +241,7 @@ end
 local function drawWalls(world, player, horizon)
     local level = world.level
     local dirx, diry = math.cos(player.angle), math.sin(player.angle)
-    local halfFov = math.tan(rc.fov * 0.5)
-    local planex, planey = -diry * halfFov, dirx * halfFov
+    local planex, planey = -diry * plane, dirx * plane
     local light = player.muzzle or 0
 
     wallBatch:clear()
@@ -263,8 +282,7 @@ end
 local function drawSprites(world, player, horizon)
     local list = world:collectSprites(visible)
     local dirx, diry = math.cos(player.angle), math.sin(player.angle)
-    local halfFov = math.tan(rc.fov * 0.5)
-    local planex, planey = -diry * halfFov, dirx * halfFov
+    local planex, planey = -diry * plane, dirx * plane
     local invDet = 1 / (planex * diry - dirx * planey)
     local light = player.muzzle or 0
     local cell = art.cellSize
