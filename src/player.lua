@@ -14,6 +14,12 @@ local TURN = 2.7
 -- will not go in the other, which is the point of carrying both.
 local MAX = {bullets = 90, clips = 200, rockets = 20, grenades = 9, flashes = 6,
     knives = 12, traps = 4}
+
+-- The status bar reads these to work out how wide the ammunition block can
+-- ever get, so the trap count beside it can sit somewhere that nothing
+-- written in that block will ever reach.
+Player.MAX = MAX
+
 local BLADE_USES = 3      -- throws in a blade before it is scrap
 local BLADES = 4          -- how many of them you can carry
 

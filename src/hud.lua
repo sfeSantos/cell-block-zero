@@ -19,12 +19,39 @@ local KEY_COLOURS = {
 
 hud.menuCount = 10
 
+-- The reload bar that stands in for the word LOADING, and the gap between
+-- the ammunition block and whatever comes after it.
+local RELOAD_W = 46
+local RELOAD_H = 5
+local AMMO_GAP = 14
+
+-- How wide the ammunition block can ever get, measured off the real fonts
+-- rather than guessed, and taken over every weapon rather than the one in
+-- your hands: a magazine of 25 is two digits where 6 is one, and 200 spare
+-- rounds are three where 24 are two. Working it out from the widest of all
+-- of them is what keeps the trap count still, whatever you are holding and
+-- however much of it is left.
+local function ammoWidth()
+    local widest = 0
+
+    for _, w in ipairs(weapons.list) do
+        if w.clip then
+            local mag = fonts.big:getWidth(tostring(w.clip))
+            local spare = fonts.small:getWidth("/ " .. (Player.MAX[w.ammo] or 0))
+            widest = math.max(widest, 54 + mag + spare)
+        end
+    end
+
+    return widest + 8 + RELOAD_W
+end
+
 function hud.load()
     fonts.small = love.graphics.newFont(12)
     fonts.text = love.graphics.newFont(16)
     fonts.big = love.graphics.newFont(26)
     fonts.huge = love.graphics.newFont(48)
     love.graphics.setFont(fonts.text)
+    hud.ammoWidth = ammoWidth()
 end
 
 local function setColor(r, g, b, a)
@@ -210,15 +237,18 @@ local function drawStatus(world, w, h, barH)
 
             love.graphics.print(text, col2 + 48, y + pad + 32)
 
+            -- the spare count stays up through the reload, because that is
+            -- the moment you most want to know it, and the reload says so
+            -- with a bar beside it instead of a word over the trap count
             local tx = col2 + 54 + fonts.big:getWidth(text)
             love.graphics.setFont(fonts.small)
+            setColor(0.58, 0.58, 0.56)
+            love.graphics.print("/ " .. spare, tx, y + pad + 44)
 
-            if player.reloadT > 0 then
-                setColor(0.90, 0.80, 0.40)
-                love.graphics.print("LOADING", tx, y + pad + 44)
-            else
-                setColor(0.58, 0.58, 0.56)
-                love.graphics.print("/ " .. spare, tx, y + pad + 44)
+            if player.reloadT > 0 and player.reloadMax > 0 then
+                local done = 1 - player.reloadT / player.reloadMax
+                bar(tx + fonts.small:getWidth("/ " .. spare) + 8,
+                    y + pad + 49, RELOAD_W, RELOAD_H, done, 0.90, 0.80, 0.40)
             end
         else
             love.graphics.setFont(fonts.big)
@@ -230,8 +260,8 @@ local function drawStatus(world, w, h, barH)
     end
 
     if (player.ammo.traps or 0) > 0 then
-        label(string.format("TRAPS  %d", player.ammo.traps), col2 + 110,
-            y + pad + 44, fonts.small)
+        label(string.format("TRAPS  %d", player.ammo.traps),
+            col2 + (hud.ammoWidth or 0) + AMMO_GAP, y + pad + 44, fonts.small)
     end
 
     local col3 = w - math.max(190, w * 0.22)
