@@ -23,13 +23,19 @@ about two thirds of the width looks right next to the rest.
 | `g3.<frame>.png` | riot captain |
 | `dg.<frame>.png` | dog |
 | `con.<frame>.png` | prisoner |
-| `prop.skeleton.png`, `prop.hanged.png`, `prop.body.png`, `prop.remains.png`, `prop.stain.png`, `prop.deadguard.png` | scenery |
+| `prop.skeleton.png`, `prop.hanged.png`, `prop.body.png`, `prop.remains.png`, `prop.deadguard.png` | scenery |
+| `prop.stain.png` | blood on the floor, painted into the ground rather than stood up in it |
 | `item.<name>.png` | pickups: `uzi`, `launcher`, `grenades`, `flashes`, `bullets`, `clips`, `ammobox`, `rockets`, `vest`, `vestheavy`, `medkit`, `snack`, `silencer`, `redkey`, `bluekey`, `yellowkey`, `knife`, `trap`, `trapset`, `trapsprung` |
 | `fx.<name>.png` | effects: `knife`, `rocket`, `grenade`, `flash`, `boom1` to `boom4`, `pop`, `blood`, `spark`, `smoke` |
 
 Guard and prisoner frames: `idle`, `walk1` to `walk4`, `aim`, `fire`, `pain`,
 `die1`, `die2`, `die3`, `dead`, `sleep`. The dog has `walk1`, `walk2`, `bite`,
 `pain`, `dead`, and the rest of its frames point at those.
+
+`prop.stain` is the one that does not stand up. It is painted flat into the
+ground, so its cell is a square of floor seen from above: fill the whole of
+it, and leave nothing along the bottom edge the way a standing figure has its
+feet.
 
 ## assets/views
 
