@@ -26,7 +26,9 @@ file, so the game runs the same with that folder empty. assets/README.md says wh
 has the scripts that drew it.
 
 The window opens fullscreen at the desktop resolution. F11 switches to a
-window and back.
+window and back. The picture follows the shape of the screen: how far the
+view reaches to the sides comes off how wide the window is, so a wide monitor
+sees more of the corridor rather than the same corridor stretched.
 
 ON WINDOWS, install LOVE 11.5 from love2d.org, the 64 bit installer. Lua
 itself is not needed, LOVE carries its own. Then either drag this folder onto

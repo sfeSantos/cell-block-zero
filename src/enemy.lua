@@ -21,18 +21,23 @@ Enemy.__index = Enemy
 -- more, which is the only reason a guard ever walks away from you.
 --
 -- A sprite is drawn ih / depth pixels wide and one tile across the view is
--- (iw / 2) / (tan(fov / 2) * depth) pixels, so the 64 px cell covers
--- 2 * tan(34 degrees) * ih / iw tiles, 0.759 of a tile on a 16 by 9 screen,
--- at any distance. The figure inside the cell is 37 px of 64 for a guard,
--- 39 for a sergeant, 43 for a riot captain, which puts his shoulders 0.219,
--- 0.231 and 0.255 of a tile from his middle. hit is three quarters of that,
--- the chest rather than the outline, so the elbow and the edge of the
--- shoulder do not count.
+-- iw / (2 * plane * depth) pixels, and rc.resize sets plane to iw / (2 * ih),
+-- so the 64 px cell covers one tile at any distance and on any shape of
+-- screen. The figure inside the cell is 37 px of 64 for a guard, 39 for a
+-- sergeant, 43 for a riot captain, which puts his shoulders 0.289, 0.305 and
+-- 0.336 of a tile from his middle. hit is three quarters of that, the chest
+-- rather than the outline, so the elbow and the edge of the shoulder do not
+-- count.
 --
--- The dog is the other way round. It is drawn nose to tail, 63 px of the 64,
+-- These used to be 0.165, 0.175 and 0.19, worked out the same way back when a
+-- cell was 0.759 of a tile on a 16 by 9 screen and something else on every
+-- other shape. The drawing has not changed; what it is worth in tiles has.
+--
+-- The dog is the other way round. It is drawn nose to tail, 59 px of the 64,
 -- and the billboard shows that whichever way it is facing, so matching the
 -- drawing would let a round that passes in front of its nose kill it. It
--- keeps the number it had.
+-- keeps the share of its own drawing it has always had, a little over two
+-- thirds of the half width rather than three quarters.
 Enemy.TIERS = {
     {
         key = "g1",
@@ -40,7 +45,7 @@ Enemy.TIERS = {
         hp = 28,
         speed = 1.95,
         radius = 0.32,
-        hit = 0.165,
+        hit = 0.217,
         sight = 15,
         fov = 1.05,
         hearing = 8,
@@ -72,7 +77,7 @@ Enemy.TIERS = {
         hp = 48,
         speed = 2.35,
         radius = 0.33,
-        hit = 0.175,
+        hit = 0.229,
         sight = 18,
         fov = 1.25,
         hearing = 10,
@@ -106,7 +111,7 @@ Enemy.TIERS = {
         hp = 85,
         speed = 2.7,
         radius = 0.35,
-        hit = 0.19,
+        hit = 0.252,
         sight = 22,
         fov = 1.45,
         hearing = 12,
@@ -142,7 +147,7 @@ Enemy.TIERS = {
         hp = 34,
         speed = 3.5,
         radius = 0.27,
-        hit = 0.24,
+        hit = 0.316,
         sight = 13,
         fov = 1.5,
         hearing = 12,

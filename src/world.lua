@@ -207,6 +207,34 @@ end
 -- the floor art, which repeats on every tile of the block. The draw is seeded
 -- off the name of the level, so a block looks the same every time you come
 -- back to it and no two blocks look alike.
+-- What lies on the floor rather than standing on it. These go to the
+-- renderer as decals, painted into the ground a row at a time, because a pool
+-- of blood on a billboard is a red disc standing on its edge. Keyed by the
+-- name of the prop so both the ones a level file places and the ones
+-- scatterStains drops are covered.
+World.FLAT_PROPS = {stain = true}
+
+-- The props that lie flat, for the renderer to paint into the floor before it
+-- draws the walls over the top.
+function World:collectDecals(out)
+    for i = #out, 1, -1 do
+        out[i] = nil
+    end
+
+    for _, prop in ipairs(self.props) do
+        if World.FLAT_PROPS[prop.prop] then
+            out[#out + 1] = {
+                name = "prop." .. prop.prop,
+                x = prop.x,
+                y = prop.y,
+                size = prop.size or 1,
+            }
+        end
+    end
+
+    return out
+end
+
 function World:scatterStains()
     local level = self.level
     local seed = 2166136261
@@ -1408,13 +1436,15 @@ function World:collectSprites(out)
     end
 
     for _, prop in ipairs(self.props) do
-        out[#out + 1] = {
-            name = "prop." .. prop.prop,
-            x = prop.x,
-            y = prop.y,
-            z = 0,
-            size = prop.size or 1,
-        }
+        if not World.FLAT_PROPS[prop.prop] then
+            out[#out + 1] = {
+                name = "prop." .. prop.prop,
+                x = prop.x,
+                y = prop.y,
+                z = 0,
+                size = prop.size or 1,
+            }
+        end
     end
 
     for _, a in ipairs(self.allies) do

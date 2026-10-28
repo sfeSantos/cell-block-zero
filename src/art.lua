@@ -664,17 +664,20 @@ end
 -- live in the floor texture: that one tile is painted on the whole block, so
 -- a stain in the file would run the length of every corridor. The world lays
 -- these down tile by tile instead.
+--
+-- This one is painted into the ground rather than stood up in it, so it fills
+-- its cell instead of sitting along the bottom edge the way a billboard does.
 function props.stain()
-    disc(30, 55, 16, GORE_THIN)
-    disc(43, 58, 10, GORE_THIN)
-    disc(19, 59, 8, GORE_THIN)
-    disc(31, 56, 10, GORE)
-    disc(39, 60, 6, GORE)
-    disc(23, 61, 5, GORE)
+    disc(31, 31, 20, GORE_THIN)
+    disc(45, 40, 12, GORE_THIN)
+    disc(18, 41, 10, GORE_THIN)
+    disc(32, 33, 13, GORE)
+    disc(41, 44, 7, GORE)
+    disc(23, 45, 6, GORE)
 
     -- the spots that flew out of it and dried on their own
-    for _, p in ipairs({{10, 52, 2}, {52, 54, 2}, {46, 50, 1}, {15, 62, 2},
-        {56, 61, 1}, {36, 48, 1}}) do
+    for _, p in ipairs({{8, 24, 2}, {56, 28, 2}, {50, 14, 1}, {13, 54, 2},
+        {58, 50, 1}, {37, 10, 1}}) do
         disc(p[1], p[2], p[3], GORE_THIN)
     end
 end

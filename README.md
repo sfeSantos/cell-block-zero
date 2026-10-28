@@ -125,6 +125,10 @@ out there.
 The menu works with the mouse as well as the keyboard: the line under the
 pointer is the selected one, a click runs it, and clicking a setting cycles it.
 The game opens fullscreen at the desktop resolution, F11 switches to a window.
+The picture follows the shape of the screen: the view is drawn into a small
+canvas and blown up by a whole number, and how far it reaches to the sides
+comes off how wide the window is. A 21 by 9 monitor sees more of the corridor
+than a 4 by 3 one does rather than seeing the same corridor stretched.
 The pointer belongs to the game while a block is being played and comes back
 when you pause, open the menu or leave the window. A and D step sideways and
 the mouse turns, the way the games you already play do it; the keyboard keeps
