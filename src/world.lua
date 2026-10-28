@@ -82,6 +82,7 @@ function World.load(path, difficulty, carry, audio)
     self.totalAllies = 0
     self.alarmT = 0
     self.alarms = 0
+    self.lockdown = false
     self.census = {}
     self.tally = {}
     self.messages = {}
@@ -175,6 +176,13 @@ function World:report()
         end
     end
 
+    local pulled = 0
+    for _, panel in ipairs(level.alarms) do
+        if panel.used then
+            pulled = pulled + 1
+        end
+    end
+
     local ranks = {}
     for _, name in ipairs(RANKS) do
         local total = self.census[name] or 0
@@ -194,6 +202,7 @@ function World:report()
         quiet = self.tally.quiet or 0,
         asleep = self.tally.asleep or 0,
         alarms = self.alarms,
+        alarmPanels = {pulled = pulled, total = #level.alarms},
         lockers = {open = open, total = #level.lockers, missed = missed},
         panels = {open = panels, total = #level.secrets},
         items = {taken = self.taken, total = self.totalItems},
@@ -594,6 +603,100 @@ function World:supplyFor(enemy)
     return nil
 end
 
+-- How far a guard will run for a panel, in tiles of walking. Any further and
+-- the fight is over long before he gets there.
+World.ALARM_REACH = 24
+
+-- Somebody is already on his way to this one. The claim is tested against the
+-- state as well as the man, so a runner who is killed, grabbed or talked out
+-- of it hands the panel straight back instead of reserving it for good.
+local function claimed(panel, enemy)
+    local by = panel.claimedBy
+
+    return by ~= nil and by ~= enemy and by.alive and by.state == "alarm"
+end
+
+-- The alarm panel a guard who has just spotted the player should run to:
+-- unused, nobody else already walking to it, near enough to be worth it, and
+-- nearer to him than the player is. That last test is the whole feature. A
+-- guard with you in front of him shoots; a guard with the panel at his elbow
+-- pulls it and lets the block deal with you.
+--
+-- Both comparisons are made in their own units: the straight line against the
+-- straight line, then the walked path against the walked distance to the
+-- player, so a panel on the far side of a wall never beats a player standing
+-- in the open.
+function World:alarmFor(enemy)
+    local level = self.level
+    local p = self.player
+    local straight = (p.x - enemy.x) ^ 2 + (p.y - enemy.y) ^ 2
+    local walked = self:walkDist(enemy)
+    local want = {}
+
+    for _, panel in ipairs(level.alarms) do
+        if not panel.used and not claimed(panel, enemy) then
+            local x, y = self:lockerFront(panel, enemy.x, enemy.y)
+            if x then
+                want[#want + 1] = {panel = panel, x = x, y = y,
+                    d = (x - enemy.x) ^ 2 + (y - enemy.y) ^ 2}
+            end
+        end
+    end
+
+    table.sort(want, function(a, b)
+        return a.d < b.d
+    end)
+
+    for _, row in ipairs(want) do
+        if row.d > World.ALARM_REACH * World.ALARM_REACH or row.d >= straight then
+            break
+        end
+
+        local path = nav.path(level, math.floor(enemy.x) + 1, math.floor(enemy.y) + 1,
+            math.floor(row.x) + 1, math.floor(row.y) + 1, World.ALARM_REACH)
+        if #path > 0 and #path < walked then
+            return row.panel, row.x, row.y
+        end
+    end
+
+    return nil
+end
+
+-- How long the block stays shut once a panel has been pulled: twice what the
+-- klaxon on its own buys, because this one was somebody's decision.
+World.LOCKDOWN_T = 12
+
+-- The panel, pulled. The klaxon has almost certainly gone off already, since
+-- being seen is enough for that. What this adds is that every guard still on
+-- his feet is now told where you were, not only the handful inside radio
+-- range of the man who saw you, and that it lasts twice as long.
+function World:raiseLockdown(panel, by)
+    if not self.level:useAlarm(panel) then
+        return false
+    end
+
+    panel.claimedBy = nil
+    self.alarms = self.alarms + 1
+    self.lockdown = true
+    self.alarmT = World.LOCKDOWN_T
+    self.audio.play("klaxon", 0.45)
+
+    local p = self.player
+    local x = by and by.lastX or p.x
+    local y = by and by.lastY or p.y
+
+    for _, e in ipairs(self.enemies) do
+        if e.alive and e ~= by then
+            e:onAlarm(self)
+            e:tipOff(x, y, 0.4, self)
+        end
+    end
+
+    self:message("Lockdown: the whole block has been told where you are")
+
+    return true
+end
+
 -- He turns the locker out for rounds and leaves the rest of it alone. The
 -- door stays shut, so it is still yours to open: what you have lost is what
 -- he is now carrying, and you only get that back by taking it off him.
@@ -759,6 +862,7 @@ function World:distractGuards()
     end
 
     self.alarmT = 0
+    self.lockdown = false
 
     return n
 end
@@ -1341,6 +1445,12 @@ end
 function World:update(dt)
     self.time = self.time + dt
     self.alarmT = math.max(0, self.alarmT - dt)
+    if self.alarmT <= 0 then
+        -- the lockdown is a state of the alarm, not a separate one: when the
+        -- klaxon stops, so does it, or the next ordinary shout would read as
+        -- a lockdown on the HUD
+        self.lockdown = false
+    end
 
     self.fieldT = self.fieldT - dt
     if self.fieldT <= 0 then

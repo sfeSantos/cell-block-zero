@@ -5,7 +5,7 @@
 local textures = {}
 
 local SIZE = 64
-local COUNT = 20
+local COUNT = 22
 
 local seed = 20231017
 
@@ -276,6 +276,84 @@ local function exitDoor(c)
     c.shade(0.14)
 end
 
+-- The alarm panel. A plate bolted into the wall, a glass front, and the
+-- handle sitting behind the glass where nobody leans on it by accident. The
+-- used one has the glass out and the handle down, so from the far end of a
+-- corridor you can tell whether anybody got here before you.
+local function alarmPanel(c, used)
+    c.fill(0.24, 0.25, 0.28, 0.05)
+    frame(c, 3, 0.17, 0.18, 0.21)
+
+    -- the plate, in the one colour nobody ever paints over
+    c.rect(9, 7, 46, 50, 0.50, 0.13, 0.11, 0.04)
+    c.rect(9, 7, 46, 2, 0.68, 0.21, 0.17)
+    c.rect(9, 55, 46, 2, 0.25, 0.07, 0.06)
+    c.vline(9, 7, 56, 0.60, 0.17, 0.14)
+    c.vline(54, 7, 56, 0.27, 0.08, 0.07)
+    rivets(c, 16, 0.44, 0.16)
+
+    -- the recess, dark enough that the handle reads against it
+    c.rect(15, 14, 34, 28, 0.11, 0.11, 0.13)
+    c.rect(15, 14, 34, 1, 0.06, 0.06, 0.07)
+
+    if used then
+        -- handle pulled right down, and what is left of the glass round the rim
+        c.rect(30, 26, 5, 13, 0.66, 0.58, 0.18, 0.03)
+        c.rect(30, 37, 5, 2, 0.86, 0.78, 0.30)
+        c.rect(28, 23, 9, 3, 0.40, 0.35, 0.12)
+
+        for x = 16, 47 do
+            local n = (x * 13 + 5) % 7
+            if n < 4 then
+                c.vline(x, 15, 15 + n, 0.60 - n * 0.04, 0.66 - n * 0.04, 0.68 - n * 0.04)
+            end
+        end
+
+        for y = 17, 40 do
+            local n = (y * 11 + 3) % 6
+            if n < 3 then
+                c.hline(y, 16, 16 + n, 0.52, 0.58, 0.60)
+                c.hline(y, 47 - n, 47, 0.44, 0.49, 0.51)
+            end
+        end
+    else
+        -- handle up, and the glass still in front of it: a dull wash, one
+        -- diagonal streak of light, and the lip that holds it in
+        c.rect(30, 19, 5, 13, 0.70, 0.62, 0.20, 0.03)
+        c.rect(30, 19, 5, 2, 0.88, 0.80, 0.32)
+        c.rect(28, 31, 9, 3, 0.42, 0.37, 0.13)
+
+        for y = 15, 40 do
+            for x = 16, 47 do
+                if (x + y) % 7 == 0 then
+                    c.px(x, y, 0.30, 0.34, 0.36)
+                end
+            end
+        end
+
+        for i = 0, 25 do
+            local x, y = 18 + i, 39 - i
+            if x <= 47 and y >= 15 then
+                c.px(x, y, 0.56, 0.62, 0.66)
+                c.px(x + 1, y, 0.40, 0.45, 0.48)
+            end
+        end
+
+        c.rect(15, 14, 34, 1, 0.52, 0.56, 0.58)
+        c.vline(15, 14, 41, 0.46, 0.50, 0.52)
+        c.vline(48, 14, 41, 0.30, 0.33, 0.35)
+        c.hline(41, 15, 48, 0.24, 0.26, 0.28)
+    end
+
+    -- the stencilled strip below it, worn down to marks
+    c.rect(14, 45, 36, 7, 0.10, 0.10, 0.11)
+    for x = 17, 46, 5 do
+        c.rect(x, 47, 3, 3, 0.74, 0.70, 0.56)
+    end
+
+    c.shade(0.18)
+end
+
 -- The tell on a loose panel. The wall itself is painted first and this goes
 -- over it: a hairline down both sides where it does not quite meet the rest,
 -- and the scuffed arc on the floor it has been dragged over. From down the
@@ -379,6 +457,7 @@ textures.NAMES = {
     "exit", "locker", "locker-open",
     "panel-stone", "panel-brick", "panel-cell", "panel-metal", "panel-rock",
     "panel-poster",
+    "alarm", "alarm-used",
 }
 
 textures.DIR = "assets/walls"
@@ -461,6 +540,9 @@ function textures.load()
         paint(c)
         loose(c)
     end
+
+    alarmPanel(cell(data, 21), false)
+    alarmPanel(cell(data, 22), true)
 
     -- and whatever the player has put in assets/walls, over the top
     textures.loadedCount = 0

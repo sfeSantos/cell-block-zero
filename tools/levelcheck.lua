@@ -332,6 +332,14 @@ local function check(path)
     note("guards %d, %d, %d  dogs %d  asleep %d  prisoners %d  ammunition %d  armour %d  food and kit %d",
         c.t1, c.t2, c.t3, c.dogs, c.asleep, c.prisoners, c.ammo, c.armour, c.medical)
 
+    -- the ! tile, so whoever edits a level next finds out it exists
+    if #level.alarms > 0 then
+        note("alarm panels %d, a guard who reaches one shuts the block down",
+            #level.alarms)
+    else
+        note("no alarm panels: nobody here can do worse than shout")
+    end
+
     blocks[#blocks + 1] = {path = path, level = level, counts = c}
 end
 

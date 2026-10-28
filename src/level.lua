@@ -27,6 +27,8 @@ local EXIT_TEX = 12
 local LOCKER_TEX = 13
 local LOCKER_OPEN_TEX = 14
 local PANEL_BASE = 14     -- a loose panel is its wall's texture plus this
+local ALARM_TEX = 21
+local ALARM_USED_TEX = 22
 
 local FACING = {
     N = -math.pi / 2,
@@ -71,6 +73,8 @@ local SLEEPERS = {z = 1, Z = 2}
 
 Level.SLEEPERS = SLEEPERS
 Level.LOCKER_TEX = LOCKER_TEX
+Level.ALARM_TEX = ALARM_TEX
+Level.ALARM_USED_TEX = ALARM_USED_TEX
 Level.PROPS = PROPS
 Level.WALLS = WALLS
 Level.DOORS = DOORS
@@ -125,6 +129,8 @@ function Level.load(path)
     self.lockers = {}
     self.secret = {}
     self.secrets = {}
+    self.alarm = {}
+    self.alarms = {}
     self.wall = {}
     self.door = {}
     self.exit = {}
@@ -204,6 +210,14 @@ function Level.load(path)
                 local panel = {x = cx, y = cy, opened = false}
                 self.secret[i] = panel
                 self.secrets[#self.secrets + 1] = panel
+            elseif c == "!" then
+                -- an alarm panel: solid, and a guard who reaches it puts the
+                -- block into lockdown. Breaking the glass is the only use it
+                -- has, so it is either untouched or finished with.
+                self.wall[i] = ALARM_TEX
+                local panel = {x = cx, y = cy, used = false}
+                self.alarm[i] = panel
+                self.alarms[#self.alarms + 1] = panel
             elseif WALLS[c] then
                 self.wall[i] = WALLS[c]
             elseif c == "X" then
@@ -371,6 +385,12 @@ function Level:secretAt(cx, cy)
     return i and self.secret[i] or nil
 end
 
+function Level:alarmAt(cx, cy)
+    local i = self:index(cx, cy)
+
+    return i and self.alarm[i] or nil
+end
+
 function Level:openLocker(box)
     if box.opened then
         return false
@@ -378,6 +398,20 @@ function Level:openLocker(box)
 
     box.opened = true
     self.wall[self:index(box.x, box.y)] = LOCKER_OPEN_TEX
+
+    return true
+end
+
+-- The glass goes and the handle comes down. The tile stays solid either way:
+-- what changes is that from across the room you can see this one has been
+-- pulled already.
+function Level:useAlarm(panel)
+    if panel.used then
+        return false
+    end
+
+    panel.used = true
+    self.wall[self:index(panel.x, panel.y)] = ALARM_USED_TEX
 
     return true
 end
