@@ -6,7 +6,10 @@ text files for levels. Everything is drawn in code at startup: the walls and
 the ground are written pixel by pixel into an atlas, the guards and the
 weapons into a canvas, and every sound is synthesised. A file in `assets/`
 takes the place of what the code drew, and the code is only the fallback for
-whatever has no file, so the game runs the same with the folder empty.
+whatever has no file, so the game runs the same with the folder empty. The
+weapon in your hands is the one thing drawn twice, in `src/art.lua` and in
+`tools/weapons.py`, and `python3 tools/viewcheck.py` builds it both ways and
+says whether the two still agree.
 
 Lights out an hour ago, and the guard who let himself into your cell was not
 there to talk. He is still on the floor of it, and everything you own came
