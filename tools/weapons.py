@@ -13,7 +13,9 @@ they are not. Change a hand here and the game looks different with an empty
 assets folder than it does with a full one, and nobody finds out until
 somebody clears the folder. So a change to a view goes in both, in the same
 sitting: this file and the view builders in src/art.lua, from art.VIEW_W
-down.
+down. Those builders are a transcription of this file, shape for shape and in
+the same order, and python3 tools/viewcheck.py says how far apart the two
+have got.
 """
 
 import math

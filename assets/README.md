@@ -61,6 +61,12 @@ code for whichever file is missing. They are meant to match, so a change to a
 weapon in your hands belongs in both, and a change to only one of them shows
 up as the game looking different with this folder empty.
 
+`python3 tools/viewcheck.py` is how you find out: it builds the view sheet
+with these files and again without them, prints how much of each weapon the
+two have in common, and leaves with 1 if any of them has fallen below 95%.
+The last few percent are Pillow filling a shape a pixel wider than the
+graphics card does, which is as close as the two get.
+
 ## assets/flats
 
 The ground, tiled across the floor and the ceiling of every block, 64 by 64

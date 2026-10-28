@@ -907,12 +907,17 @@ end
 -- art.VIEW_ORDER is the fallback, used for whatever has no file in
 -- assets/views, and tools/weapons.py writes the files that take its place.
 -- The two have to be changed together or the game stops looking the same with
--- an empty assets folder, which is the one thing the fallback is for.
+-- an empty assets folder, which is the one thing the fallback is for. What is
+-- below is a transcription of that script, shape for shape and in the same
+-- order, because that is the only way the two stay the same picture;
+-- tools/viewcheck.py measures how far apart they have got.
 art.VIEW_W = 400
 art.VIEW_H = 300
 
 -- Same arrangement as the sprites: the builders below are written against the
 -- 200 by 150 the view used to be, and the sheet is painted at twice that.
+-- tools/weapons.py draws on that same 200 by 150 grid and writes it out at
+-- 400 by 300, so a coordinate copied from there needs no rescaling here.
 local VIEW_GRID_W = 200
 local VIEW_SCALE = art.VIEW_W / VIEW_GRID_W
 
@@ -925,13 +930,22 @@ art.VIEW_PACK = 7
 local views = {}
 
 local SKIN = {0.78, 0.60, 0.46}
+local SKIN_HI = {0.87, 0.71, 0.56}
 local SKIN_LO = {0.62, 0.46, 0.34}
 local CUFF = {0.50, 0.52, 0.56}
+local CUFF_HI = {0.62, 0.64, 0.68}
 local BLOOD = {0.58, 0.05, 0.06}
 local GUN = {0.26, 0.27, 0.30}
 local GUN_HI = {0.42, 0.44, 0.48}
 local GUN_LO = {0.15, 0.15, 0.17}
 local WOOD = {0.32, 0.21, 0.13}
+local WOOD_HI = {0.46, 0.31, 0.18}
+local BRASS_HI = {0.89, 0.77, 0.41}
+
+-- Dried, not fresh. The guard who came into the cell is an hour behind you
+-- and it is still on your hands.
+local DRIED = {0.44, 0.10, 0.09, 0.80}
+local DRIED_LO = {0.31, 0.07, 0.06, 0.75}
 
 local HOLD_X, HOLD_Y, HOLD_S = 112, 132, 0.78
 
@@ -950,16 +964,94 @@ local function tube(cx, yTop, wTop, yBot, wBot, c)
         cx + wBot * 0.5, yBot, cx - wBot * 0.5, yBot)
 end
 
-local SKIN_HI = {0.88, 0.71, 0.56}
+-- Pillow does not blend. A shape drawn with an alpha in tools/weapons.py
+-- replaces what it covers, alpha and all, instead of sitting over it, so the
+-- smoke off a launcher takes a bite out of the hand it crosses rather than
+-- greying it, and a speck of blood is the colour it was mixed at. Everything
+-- translucent here is drawn through this or the two stop landing on the same
+-- pixels.
+local function translucent(draw)
+    lg.setBlendMode("replace", "premultiplied")
+    draw()
+    lg.setBlendMode("alpha")
+end
+
+-- Most frames end with a dark line round the silhouette, two real pixels
+-- thick. In tools/weapons.py that is a pixel pass over the finished frame,
+-- and there is no primitive for it here, so a frame is drawn into a canvas of
+-- its own and the canvas is stamped round itself in near black, once for
+-- every offset within two pixels of the shape, with the frame landing back on
+-- top. It stops where the Python's does: whatever is drawn after the call, a
+-- muzzle flash or a cloud of smoke, stays outside the line.
+local EDGE = {0.06, 0.06, 0.07}
+local EDGE_STEPS = {
+    {-1, 0}, {1, 0}, {0, -1}, {0, 1},
+    {-1, -1}, {-1, 1}, {1, -1}, {1, 1},
+    {-2, 0}, {2, 0}, {0, -2}, {0, 2},
+}
+
+-- Two of them, because the stamping reads one and writes the other, and a
+-- canvas cannot be both. Built on first use: there is no window to make them
+-- in until art.load runs.
+local pages = {}
+local page = 1
+
+local function viewPage(n)
+    if not pages[n] then
+        pages[n] = lg.newCanvas(art.VIEW_W, art.VIEW_H)
+        pages[n]:setFilter("nearest", "nearest")
+    end
+
+    return pages[n]
+end
+
+local function outline()
+    local drawn = viewPage(page)
+    page = 3 - page
+
+    local onto = viewPage(page)
+
+    lg.push("all")
+    lg.origin()
+    lg.setScissor()
+    lg.setCanvas(onto)
+    lg.clear(0, 0, 0, 0)
+
+    -- a canvas holds its colour already multiplied by its alpha, so it goes
+    -- back down premultiplied or everything with a soft edge darkens twice
+    lg.setBlendMode("alpha", "premultiplied")
+    lg.setColor(EDGE)
+
+    for _, step in ipairs(EDGE_STEPS) do
+        lg.draw(drawn, step[1], step[2])
+    end
+
+    lg.setColor(1, 1, 1)
+    lg.draw(drawn, 0, 0)
+    lg.pop()
+
+    -- the rest of the frame carries on over the line, on the page that has it
+    lg.setCanvas(onto)
+end
+
 local FINGERS = {22, 26, 25, 21}
 
 -- One finger round the front of the grip: a bar with the knuckle end rounded
--- off on the left, a lit top edge and the crease of the next one under it.
+-- off on the left, a lit top edge and the crease of the next one under it. At
+-- 400 across there is room for the joint as well, which is what stops four of
+-- these reading as a stack of sausages.
 local function finger(x, y, w, h, base, shade)
+    local lit = tint(base, 1.14)
+
     rect(x, y, w, h, base)
     disc(x, y + h * 0.5, h * 0.5, base)
-    rect(x, y, w, 2, SKIN_HI)
-    rect(x - 1, y + h - 2, w + 1, 2, shade)
+    rect(x, y, w, 1.5, lit)
+    rect(x - 1, y + h - 1.5, w + 1, 1.5, shade)
+
+    -- the middle joint, a shade across and a highlight on the near side of it
+    rect(x + w * 0.42, y + 1, 1.5, h - 2, shade)
+    rect(x + w * 0.42 + 1.5, y + 1.5, 1, h - 3, lit)
+    disc(x + 1.5, y + h * 0.5, h * 0.28, lit)
 end
 
 -- One hand on the weapon, the right, seen from behind and a little above.
@@ -968,6 +1060,7 @@ local function fists(spread)
     local hx = 2 + (spread or 0) * 0.5
     local cy = -8
 
+    -- the back of the hand, with the two tendons that stand out on it
     rect(hx - 4, cy - 30, 26, 42, SKIN)
     rect(hx + 16, cy - 30, 6, 42, SKIN_HI)
     disc(hx + 9, cy - 30, 13, SKIN)
@@ -984,9 +1077,29 @@ local function fists(spread)
     poly(SKIN, hx + 10, cy - 36, hx - 2, cy - 35, hx - 4, cy - 30,
         hx + 8, cy - 29)
 
+    -- a knuckle on each finger where it comes over the top of the grip
+    for i = 0, 3 do
+        disc(hx - 16, cy - 24 + i * 9, 2.4, SKIN_HI)
+    end
+
+    -- the wrist, and the sleeve of the shirt off the guard's back
     rect(hx - 6, cy + 6, 28, 12, SKIN_LO)
     rect(hx - 8, cy + 14, 32, 15, CUFF)
-    rect(hx - 8, cy + 14, 32, 3, {0.62, 0.64, 0.68})
+    rect(hx - 8, cy + 14, 32, 3, CUFF_HI)
+    rect(hx - 8, cy + 26, 32, 3, {0.41, 0.43, 0.47})
+
+    -- two folds in the sleeve, because a flat band reads as a cuff of metal
+    rect(hx - 4, cy + 17, 2, 9, {0.44, 0.46, 0.50})
+    rect(hx + 8, cy + 18, 2, 8, {0.44, 0.46, 0.50})
+
+    -- what is left of the guard, specks of it rather than wounds
+    translucent(function()
+        rect(hx + 4, cy - 26, 6, 2, DRIED)
+        rect(hx + 12, cy - 20, 3, 2, DRIED_LO)
+        rect(hx - 12, cy - 11, 5, 2, DRIED)
+        rect(hx - 2, cy + 8, 4, 2, DRIED_LO)
+        rect(hx + 2, cy + 16, 6, 2, DRIED_LO)
+    end)
 end
 
 -- The left hand, the one the comment above says is busy with doors and
@@ -1009,23 +1122,26 @@ local function offHand(x, y, rot, s)
 
     poly(SKIN_HI, 16, -10, 24, -4, 24, 8, 14, 10)
     rect(-16, 22, 32, 14, CUFF)
-    rect(-16, 22, 32, 3, {0.62, 0.64, 0.68})
+    rect(-16, 22, 32, 3, CUFF_HI)
 
     lg.pop()
 end
 
 local function muzzleFlash(x, y, s, quiet)
-    if quiet then
-        disc(x, y, 7 * s, {1, 0.92, 0.62, 0.45})
-        disc(x, y - 6 * s, 11 * s, {0.58, 0.57, 0.54, 0.28})
+    translucent(function()
+        if quiet then
+            disc(x, y, 7 * s, {1, 0.92, 0.62, 0.45})
+            disc(x, y - 6 * s, 11 * s, {0.58, 0.57, 0.54, 0.28})
 
-        return
-    end
+            return
+        end
 
-    disc(x, y, 12 * s, {1, 0.94, 0.62, 0.95})
-    disc(x, y - 8 * s, 17 * s, {1, 0.68, 0.18, 0.6})
-    poly({1, 0.88, 0.42, 0.75},
-        x - 20 * s, y + 4 * s, x, y - 28 * s, x + 20 * s, y + 4 * s, x, y + 13 * s)
+        poly({1, 0.81, 0.37, 0.80},
+            x - 20 * s, y + 4 * s, x, y - 30 * s, x + 20 * s, y + 4 * s,
+            x, y + 14 * s)
+        disc(x, y - 7 * s, 15 * s, {1, 0.70, 0.20, 0.65})
+        disc(x, y, 11 * s, {1, 0.95, 0.71, 0.96})
+    end)
 end
 
 local function hatchetBody(rot, s)
@@ -1033,10 +1149,21 @@ local function hatchetBody(rot, s)
     lg.rotate(rot)
     lg.scale(s or 1, s or 1)
     rect(-7, -96, 14, 98, WOOD)
-    rect(-7, -96, 4, 98, {0.46, 0.31, 0.18})
-    poly({0.60, 0.62, 0.66}, -8, -96, 24, -106, 32, -82, -8, -74)
-    poly({0.88, 0.90, 0.94}, 22, -104, 32, -82, 27, -79, 17, -100)
-    rect(-10, -26, 20, 18, {0.20, 0.20, 0.22})
+    rect(-7, -96, 4, 98, WOOD_HI)
+    rect(2, -96, 5, 98, {0.22, 0.14, 0.09})
+    poly({0.55, 0.56, 0.60}, -8, -96, 24, -106, 32, -82, -8, -74)
+    poly({0.89, 0.90, 0.93}, 22, -104, 32, -82, 27, -79, 17, -100)
+    poly({0.38, 0.39, 0.42}, -8, -82, 14, -88, 18, -79, -8, -74)
+
+    -- the line where the bevel starts, and the binding on the haft
+    poly({0.67, 0.68, 0.71}, 18, -102, 26, -84, 23, -83, 15, -100)
+
+    for i = 0, 2 do
+        rect(1, -72 + i * 6, 7, 2.5, {0.16, 0.10, 0.06})
+    end
+
+    rect(-10, -26, 20, 18, {0.18, 0.18, 0.20})
+    rect(-10, -26, 20, 3, {0.30, 0.30, 0.32})
     lg.pop()
 end
 
@@ -1057,23 +1184,42 @@ end
 -- out of.
 local function revolverBody(sil, hollow)
     poly(WOOD, -15, -2, 15, -2, 11, -42, -9, -42)
-    poly({0.40, 0.27, 0.17}, -15, -2, -7, -2, -5, -42, -9, -42)
+    poly(WOOD_HI, -15, -2, -7, -2, -5, -42, -9, -42)
     rect(-17, -60, 34, 20, GUN)
     rect(-17, -60, 34, 3, GUN_HI)
+    rect(-17, -43, 34, 3, GUN_LO)
     disc(-3, -43, 8, GUN_LO)
     rect(-14, -80, 28, 22, {0.31, 0.32, 0.35})
     rect(-14, -80, 28, 2, GUN_HI)
+
+    -- the flutes between the chambers, which is what a cylinder looks like
+    for i = -1, 1 do
+        rect(i * 9 - 1, -78, 2, 18, {0.24, 0.25, 0.28})
+    end
 
     if hollow then
         rect(-11, -78, 22, 18, {0.07, 0.07, 0.08})
     else
         disc(0, -69, 9, {0.22, 0.22, 0.25})
         disc(0, -69, 3, {0.07, 0.07, 0.08})
+        disc(-2.5, -71.5, 2, {0.41, 0.42, 0.45})
     end
 
     tube(0, -122, 14, -78, 20, GUN)
     tube(-5, -120, 3, -78, 4, GUN_HI)
+    tube(6, -120, 3, -78, 4, GUN_LO)
     rect(-4, -126, 8, 6, GUN_LO)
+
+    -- the front sight on the muzzle, the ejector rod under the barrel, and
+    -- the checkering on the grip
+    rect(-2.5, -133, 5, 7, {0.36, 0.37, 0.40})
+    rect(-3, -100, 6, 20, {0.20, 0.20, 0.23})
+    rect(-3, -100, 2, 20, {0.35, 0.36, 0.39})
+
+    for i = 0, 4 do
+        rect(-12 + i * 5, -36, 1.5, 30, tint(WOOD, 0.72))
+        rect(-11 + i * 5, -36, 1, 30, WOOD_HI)
+    end
 
     if sil then
         tube(0, -132, 22, -86, 28, {0.15, 0.16, 0.18})
@@ -1095,8 +1241,15 @@ local function revolverCylinder(x, y, loaded)
 
     for i = 0, 5 do
         local a = i / 6 * math.pi * 2
-        disc(math.cos(a) * 7, math.sin(a) * 7, 3.4,
-            i < loaded and BRASS or {0.06, 0.06, 0.07})
+        local cx, cy = math.cos(a) * 7, math.sin(a) * 7
+        disc(cx, cy, 3.4, i < loaded and BRASS or {0.06, 0.06, 0.07})
+
+        -- a primer in the middle of each round that is still there
+        if i < loaded then
+            disc(cx, cy, 1.4, BRASS_HI)
+        else
+            disc(cx - 0.6, cy - 0.6, 2.6, {0.12, 0.12, 0.13})
+        end
     end
 
     disc(0, 0, 2.5, GUN_HI)
@@ -1113,6 +1266,7 @@ local function speedloader(x, y)
     for i = 0, 5 do
         local a = i / 6 * math.pi * 2
         disc(math.cos(a) * 7, math.sin(a) * 7, 3.4, BRASS)
+        disc(math.cos(a) * 7, math.sin(a) * 7 - 1, 1.6, BRASS_HI)
     end
 
     disc(0, 0, 3, {0.40, 0.42, 0.46})
@@ -1148,6 +1302,8 @@ local function revolverReload(step, sil)
         fists(0)
         lg.pop()
     end)
+
+    outline()
 end
 
 function views.revolver(frame)
@@ -1157,16 +1313,20 @@ function views.revolver(frame)
 
     local fire = frame == 2 or frame == 4
     local sil = frame >= 3
+    local lift = fire and -5 or 0
 
-    held(fire and -5 or 0, function()
+    held(lift, function()
         revolverBody(sil, false)
-
-        if fire then
-            muzzleFlash(0, sil and -134 or -126, 1, sil)
-        end
-
         fists(0)
     end)
+
+    outline()
+
+    if fire then
+        held(lift, function()
+            muzzleFlash(0, sil and -134 or -126, 1, sil)
+        end)
+    end
 end
 
 -- The magazine goes through the grip on one of these, so `mag` is the
@@ -1183,8 +1343,19 @@ local function uziBody(sil, mag)
     rect(-18, -74, 36, 30, {0.23, 0.23, 0.26})
     rect(-18, -74, 36, 3, GUN_HI)
     rect(-18, -56, 36, 2, GUN_LO)
+    rect(-18, -74, 4, 30, {0.32, 0.33, 0.36})
     rect(14, -70, 8, 10, {0.17, 0.17, 0.19})
     disc(-2, -50, 7, GUN_LO)
+
+    -- the cocking handle on top of the receiver and the port it rides in
+    rect(-14, -77, 16, 4, {0.38, 0.39, 0.42})
+    rect(-14, -77, 16, 1.5, {0.53, 0.54, 0.58})
+    rect(-10, -73, 20, 2, {0.10, 0.10, 0.12})
+
+    -- the ejection port, open, and the rear sight behind it
+    rect(6, -68, 11, 7, {0.08, 0.08, 0.09})
+    rect(6, -68, 11, 1.5, {0.34, 0.35, 0.38})
+    rect(16, -79, 5, 4, {0.38, 0.39, 0.42})
     tube(0, -116, 13, -72, 18, GUN)
     tube(-4, -114, 3, -72, 4, GUN_HI)
     rect(-5, -120, 10, 5, GUN_LO)
@@ -1206,7 +1377,14 @@ local function uziMag(x, y, rot)
     poly({0.19, 0.19, 0.21}, -9, 0, 9, 0, 11, 42, -7, 42)
     poly({0.27, 0.27, 0.30}, -9, 0, -3, 0, -5, 42, -7, 42)
     rect(-8, 1, 16, 4, BRASS)
-    rect(-8, 1, 16, 1, {0.86, 0.72, 0.30})
+    rect(-8, 1, 16, 1, BRASS_HI)
+
+    -- witness holes down the back of it, and the floor plate
+    for i = 0, 3 do
+        rect(-1, 8 + i * 8, 4, 4, {0.10, 0.10, 0.12})
+    end
+
+    rect(-8, 38, 19, 4, {0.13, 0.13, 0.15})
     lg.pop()
 end
 
@@ -1232,6 +1410,8 @@ local function uziReload(step, sil)
 
         fists(4)
     end)
+
+    outline()
 end
 
 function views.uzi(frame)
@@ -1241,25 +1421,33 @@ function views.uzi(frame)
 
     local fire = frame == 2 or frame == 4
     local sil = frame >= 3
+    local lift = fire and -4 or 0
 
-    held(fire and -4 or 0, function()
+    held(lift, function()
         uziBody(sil, true)
-
-        if fire then
-            muzzleFlash(0, sil and -132 or -122, 0.9, sil)
-            if not sil then
-                disc(22, -106, 7, {0.56, 0.56, 0.58, 0.3})
-            end
-        end
-
         fists(4)
     end)
+
+    outline()
+
+    if fire then
+        held(lift, function()
+            muzzleFlash(0, sil and -132 or -122, 0.9, sil)
+
+            if not sil then
+                translucent(function()
+                    disc(22, -106, 7, {0.56, 0.56, 0.58, 0.30})
+                end)
+            end
+        end)
+    end
 end
 
 function views.launcher(frame)
     local fire = frame == 2
+    local lift = fire and -6 or 0
 
-    held(fire and -6 or 0, function()
+    held(lift, function()
         tube(0, -120, 30, -22, 50, {0.27, 0.31, 0.26})
         tube(-13, -118, 5, -22, 9, {0.40, 0.45, 0.38})
         tube(13, -118, 4, -22, 7, {0.17, 0.20, 0.16})
@@ -1268,15 +1456,21 @@ function views.launcher(frame)
         rect(-32, -96, 15, 12, {0.23, 0.26, 0.21})
         rect(-28, -112, 5, 18, {0.31, 0.34, 0.29})
         rect(-16, -126, 32, 7, {0.22, 0.25, 0.21})
-
-        if fire then
-            muzzleFlash(0, -130, 1.4)
-            disc(-30, -4, 18, {0.56, 0.56, 0.58, 0.4})
-            disc(26, 2, 20, {0.50, 0.50, 0.52, 0.3})
-        end
-
+        rect(-16, -126, 32, 2, {0.38, 0.42, 0.35})
         fists(6)
     end)
+
+    outline()
+
+    if fire then
+        held(lift, function()
+            muzzleFlash(0, -130, 1.4)
+            translucent(function()
+                disc(-30, -4, 18, {0.56, 0.56, 0.58, 0.40})
+                disc(26, 2, 20, {0.50, 0.50, 0.52, 0.30})
+            end)
+        end)
+    end
 end
 
 local function thrower(frame, ball)
@@ -1286,6 +1480,7 @@ local function thrower(frame, ball)
             rect(-14, -138, 28, 92, SKIN)
             rect(8, -138, 6, 92, SKIN_HI)
             rect(-14, -66, 28, 16, CUFF)
+            rect(-14, -66, 28, 3, CUFF_HI)
             rect(-14, -152, 28, 20, SKIN)
             disc(10, -148, 12, SKIN)
 
@@ -1294,6 +1489,12 @@ local function thrower(frame, ball)
             end
 
             poly(SKIN_HI, 12, -154, 4, -164, -8, -162, -6, -154, 6, -150)
+
+            translucent(function()
+                rect(-10, -156, 7, 3, DRIED)
+                rect(-12, -120, 5, 8, DRIED)
+                rect(2, -104, 4, 5, DRIED_LO)
+            end)
 
             return
         end
@@ -1314,8 +1515,18 @@ local function thrower(frame, ball)
 
         poly(SKIN_HI, 14, -38, 6, -48, -6, -47, -8, -39, 4, -33)
         rect(-6, -44, 8, 3, SKIN)
+
+        translucent(function()
+            rect(-10, -34, 6, 2, DRIED)
+            rect(2, -26, 4, 2, DRIED_LO)
+            rect(-4, -6, 5, 2, DRIED)
+        end)
+
         rect(-16, 6, 32, 14, CUFF)
+        rect(-16, 6, 32, 3, CUFF_HI)
     end)
+
+    outline()
 end
 
 function views.grenades(frame)
@@ -1340,6 +1551,7 @@ end
 function views.flashes(frame)
     thrower(frame, function()
         rect(-14, -30, 28, 44, {0.46, 0.47, 0.50})
+        rect(-14, -30, 5, 44, {0.62, 0.64, 0.67})
         rect(-14, -16, 28, 11, {0.94, 0.94, 0.90})
         rect(-14, -1, 28, 6, {0.82, 0.72, 0.20})
         rect(-7, -38, 14, 9, {0.30, 0.31, 0.33})
@@ -1347,12 +1559,15 @@ function views.flashes(frame)
 end
 
 local function splatter(n, sx, sy, spread, size)
-    for i = 1, n do
-        local a = (i / n) * math.pi * 2
-        local r = spread * (0.3 + (i % 3) * 0.3)
-        disc(sx + math.cos(a) * r, sy + math.sin(a) * r * 0.6,
-            size * (0.4 + (i % 4) * 0.25), {BLOOD[1], BLOOD[2], BLOOD[3], 0.85})
-    end
+    translucent(function()
+        for i = 1, n do
+            local a = (i / n) * math.pi * 2
+            local r = spread * (0.3 + (i % 3) * 0.3)
+            disc(sx + math.cos(a) * r, sy + math.sin(a) * r * 0.6,
+                size * (0.4 + (i % 4) * 0.25),
+                {BLOOD[1], BLOOD[2], BLOOD[3], 0.85})
+        end
+    end)
 end
 
 local function hatchetAt(x, y, rot, s)
@@ -1367,10 +1582,10 @@ end
 local function victim(sink, lean, slump)
     lg.push()
     lg.translate(100, 88 + (sink or 0))
-    lg.scale(1, 1)
 
     poly({0.24, 0.27, 0.36}, -56, 0, 56, 0, 66, 62, -66, 62)
     rect(-56, 0, 112, 7, {0.30, 0.33, 0.44})
+    poly({0.18, 0.21, 0.28}, 2, 0, 56, 0, 66, 62, 2, 62)
     rect(-30, 22, 60, 4, {0.18, 0.20, 0.27})
 
     lg.push()
@@ -1380,14 +1595,17 @@ local function victim(sink, lean, slump)
     rect(-15, -26, 30, 6, {0.58, 0.42, 0.33})
     disc(0, -48, 30, {0.52, 0.38, 0.29})
     disc(0, -50, 28, {0.76, 0.58, 0.45})
+    disc(2, -50, 26, {0.66, 0.49, 0.38})
     disc(0, -57, 29, {0.17, 0.20, 0.31})
     disc(0, -59, 26, {0.22, 0.26, 0.38})
     disc(-27, -46, 7, {0.64, 0.47, 0.36})
-    disc(27, -46, 7, {0.64, 0.47, 0.36})
+    disc(27, -46, 7, {0.55, 0.40, 0.31})
     rect(-31, -60, 62, 6, {0.12, 0.14, 0.22})
 
     if slump then
-        rect(-20, -34, 40, 10, {0.45, 0.06, 0.07, 0.8})
+        translucent(function()
+            rect(-20, -34, 40, 10, {0.45, 0.06, 0.07, 0.80})
+        end)
     end
 
     lg.pop()
@@ -1402,11 +1620,20 @@ local function gripHand(x, y, rot, s)
     rect(-20, 0, 40, 64, {0.42, 0.30, 0.22})
     disc(0, 0, 19, {0.42, 0.30, 0.22})
     rect(-18, 2, 36, 60, {0.88, 0.70, 0.55})
+    rect(-18, 2, 6, 60, {0.94, 0.79, 0.65})
     rect(-18, 48, 36, 14, CUFF)
     disc(0, 0, 17, {0.88, 0.70, 0.55})
+
     for i = 0, 2 do
         rect(-16, -12 + i * 9, 32, 6, {0.68, 0.50, 0.38})
     end
+
+    translucent(function()
+        rect(-15, -10, 12, 5, DRIED)
+        rect(-2, 0, 9, 4, DRIED_LO)
+        rect(-14, 16, 7, 9, DRIED)
+    end)
+
     lg.pop()
 end
 
@@ -1426,7 +1653,10 @@ function views.throat(frame)
     else
         hatchetAt(132, 66, -1.7, 0.85)
         splatter(18, 92, 72, 42, 9)
-        rect(44, 86, 112, 10, {BLOOD[1], BLOOD[2], BLOOD[3], 0.6})
+
+        translucent(function()
+            rect(44, 86, 112, 10, {BLOOD[1], BLOOD[2], BLOOD[3], 0.60})
+        end)
     end
 end
 
@@ -1443,7 +1673,10 @@ function views.head(frame)
     else
         hatchetAt(112, 34, -0.6, 0.95)
         splatter(18, 100, 52, 38, 9)
-        rect(56, 58, 92, 8, {BLOOD[1], BLOOD[2], BLOOD[3], 0.55})
+
+        translucent(function()
+            rect(56, 58, 92, 8, {BLOOD[1], BLOOD[2], BLOOD[3], 0.55})
+        end)
     end
 
     gripHand(178, 112, -0.45, 0.8)
@@ -1457,13 +1690,45 @@ function views.neck(frame)
     gripHand(100 + 38 + reach, 50, -1.6 + twist, 0.8)
 
     if frame == 3 then
-        for i = 1, 4 do
-            rect(120 + i * 7, 30 + i * 5, 15, 3, {0.95, 0.95, 0.95, 0.45})
-        end
+        translucent(function()
+            for i = 1, 4 do
+                rect(120 + i * 7, 30 + i * 5, 15, 3, {0.95, 0.95, 0.95, 0.45})
+            end
+        end)
     elseif frame == 4 then
-        rect(50, 34, 100, 4, {0.92, 0.92, 0.92, 0.3})
-        rect(58, 44, 84, 3, {0.92, 0.92, 0.92, 0.2})
+        translucent(function()
+            rect(50, 34, 100, 4, {0.92, 0.92, 0.92, 0.30})
+            rect(58, 44, 84, 3, {0.92, 0.92, 0.92, 0.20})
+        end)
     end
+end
+
+-- One frame into the slot it has on the sheet. Every frame goes through a
+-- page of its own whether it asks for an outline or not, since that is the
+-- only thing outline() can work on, and the finished page is stamped into
+-- the sheet from there.
+local function paintView(name, col, x, y)
+    local sheet = lg.getCanvas()
+
+    page = 1
+
+    lg.push("all")
+    lg.origin()
+    lg.setScissor()
+    lg.setCanvas(viewPage(page))
+    lg.clear(0, 0, 0, 0)
+    lg.setBlendMode("alpha")
+    lg.scale(VIEW_SCALE)
+    views[name](col)
+    lg.pop()
+
+    lg.push("all")
+    lg.setCanvas(sheet)
+    lg.setBlendMode("alpha")
+    lg.setColor(1, 1, 1)
+    lg.draw(viewPage(page), x, y)
+    lg.pop()
+    lg.setCanvas(sheet)
 end
 
 art.VIEW_ORDER = {"hatchet", "revolver", "uzi", "launcher", "grenades", "flashes",
@@ -1671,13 +1936,7 @@ function art.load()
             local x, y = (slot % pack) * vw, math.floor(slot / pack) * vh
             slot = slot + 1
 
-            lg.push()
-            lg.setScissor(x, y, vw, vh)
-            lg.translate(x, y)
-            lg.scale(VIEW_SCALE)
-            views[name](col)
-            lg.setScissor()
-            lg.pop()
+            paintView(name, col, x, y)
 
             local image = readImage(string.format("%s/%s.%d.png", art.VIEW_DIR, name, col))
 
