@@ -575,17 +575,26 @@ local function circleHitsRect(px, py, r, x0, y0, x1, y1)
     return dx * dx + dy * dy < r * r
 end
 
-function Level:doorRect(door)
+-- The slab's rectangle. `open` says how far it has slid, 0 shut and 1 away,
+-- and defaults to where the slab actually is; pass it to ask for the rect the
+-- slab would have at some other position.
+function Level:doorRect(door, open)
+    open = open or door.open
+
     local x0, y0 = door.x - 1, door.y - 1
     if door.axis == "x" then
-        return x0 + door.open, y0 + 0.5 - DOOR_HALF, x0 + 1, y0 + 0.5 + DOOR_HALF
+        return x0 + open, y0 + 0.5 - DOOR_HALF, x0 + 1, y0 + 0.5 + DOOR_HALF
     end
 
-    return x0 + 0.5 - DOOR_HALF, y0 + door.open, x0 + 0.5 + DOOR_HALF, y0 + 1
+    return x0 + 0.5 - DOOR_HALF, y0 + open, x0 + 0.5 + DOOR_HALF, y0 + 1
 end
 
 -- True when a disc of radius r centred on (x, y) overlaps anything solid.
-function Level:blocked(x, y, r)
+-- `keys` is optional and says who is moving. Pass it and a locked door the
+-- mover has no key for stays solid however far its slab has slid, so a guard
+-- holding the red door open is not a way through it. Leave it out and only
+-- the slab counts, which is what the guards, the allies and the bullets want.
+function Level:blocked(x, y, r, keys)
     local cx0 = math.floor(x - r) + 1
     local cx1 = math.floor(x + r) + 1
     local cy0 = math.floor(y - r) + 1
@@ -604,7 +613,14 @@ function Level:blocked(x, y, r)
                 end
             else
                 local d = self.door[i]
-                if d and d.open < 0.98 then
+                if d and d.lock and keys and keys[d.lock] ~= true then
+                    -- the slab as it is when shut, not the whole tile, so he
+                    -- can still walk up and stand against it from either side
+                    local x0, y0, x1, y1 = self:doorRect(d, 0)
+                    if circleHitsRect(x, y, r, x0, y0, x1, y1) then
+                        return true
+                    end
+                elseif d and d.open < 0.98 then
                     local x0, y0, x1, y1 = self:doorRect(d)
                     if circleHitsRect(x, y, r, x0, y0, x1, y1) then
                         return true

@@ -403,13 +403,13 @@ local function tryMove(self, level, nx, ny)
         return
     end
 
-    if not level:blocked(nx, self.y, RADIUS) then
+    if not level:blocked(nx, self.y, RADIUS, self.keys) then
         self.x = nx
     else
         self.vx = 0
     end
 
-    if not level:blocked(self.x, ny, RADIUS) then
+    if not level:blocked(self.x, ny, RADIUS, self.keys) then
         self.y = ny
     else
         self.vy = 0
@@ -712,7 +712,10 @@ function Player:use(world)
         end
 
         local door = level:doorAt(cx, cy)
-        if door and door.state ~= "open" then
+        if door then
+            -- the lock first, and whatever the slab is doing: a door a guard
+            -- is holding open is still locked, and saying so is better than
+            -- "nothing to use here"
             if door.lock and not self.keys[door.lock] then
                 world:message(door.lock:upper() .. " key needed")
                 world.audio.play("locked", 0.5)
@@ -720,11 +723,13 @@ function Player:use(world)
                 return
             end
 
-            level:openDoor(door)
-            world.audio.play("door", 0.5)
-            world:noise(cx - 0.5, cy - 0.5, 6, nil)
+            if door.state ~= "open" then
+                level:openDoor(door)
+                world.audio.play("door", 0.5)
+                world:noise(cx - 0.5, cy - 0.5, 6, nil)
 
-            return
+                return
+            end
         end
     end
 
