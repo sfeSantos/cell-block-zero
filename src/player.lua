@@ -321,6 +321,21 @@ function Player:reloadDip()
     return 1
 end
 
+-- Which third of the reload we are in, for the weapons that have frames of
+-- their own: 0 while the magazine comes out, 1 while the new one goes in, 2
+-- while the gun comes back up. nil when nothing is being reloaded. It reads
+-- the same clock as the dip, so the weapon's own reload time still decides
+-- how long each one is on screen.
+function Player:reloadStage()
+    if self.reloadT <= 0 or self.reloadMax <= 0 then
+        return nil
+    end
+
+    local t = 1 - self.reloadT / self.reloadMax
+
+    return math.max(0, math.min(2, math.floor(t * 3)))
+end
+
 function Player:canHold(id)
     if not self.has[id] then
         return false
