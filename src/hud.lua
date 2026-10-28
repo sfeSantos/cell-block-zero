@@ -134,6 +134,13 @@ local function drawWeaponView(world, w, h, barH)
     local dip = player:reloadDip()
     local tilt = 0
 
+    -- and only to the gun. An execution puts the hands round his neck on
+    -- screen instead, and the magazine being changed somewhere off to one
+    -- side is no reason to drop those half a view down it.
+    if kind then
+        dip = 0
+    end
+
     if dip > 0 then
         local own = art.RELOAD_VIEW[name] ~= nil
         y = y + art.VIEW_H * scale * (own and 0.18 or 0.52) * dip
