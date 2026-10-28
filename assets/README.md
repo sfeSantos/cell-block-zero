@@ -11,8 +11,9 @@ A file is matched to what it replaces by its name.
 ## assets/sprites
 
 Everything that stands in the world, one file per frame, square and
-transparent where it should be. 64 by 64 is what the game draws at, but any
-size works: the file is scaled into the cell. The whole cell is one tile wide
+transparent where it should be. 128 by 128 is what the game draws at, but any
+size works: the file is scaled into the cell, so a 64 by 64 file from an
+earlier version still loads, just softer than the rest. The whole cell is one tile wide
 and one tile tall, the feet belong at the bottom edge, and a figure that fills
 about two thirds of the width looks right next to the rest.
 
@@ -39,8 +40,10 @@ feet.
 
 ## assets/views
 
-The weapon in your hands, `<weapon>.<frame>.png`, drawn at 200 by 150 with the
-grip at the bottom of the cell. `hatchet`, `launcher`, `grenades`, `flashes`
+The weapon in your hands, `<weapon>.<frame>.png`, drawn at 400 by 300 with the
+grip at the bottom of the cell. It is the most magnified art in the game: the
+HUD draws it at about 0.46 of the window height, which is four times its own
+size on a 1080 line screen, so it is the one place where detail pays most. `hatchet`, `launcher`, `grenades`, `flashes`
 and `knife` have two frames, `throat`, `head` and `neck` are the four frames of
 an execution, and `revolver` and `uzi` have ten:
 

@@ -1,4 +1,4 @@
-"""The weapon in your hands, 200 by 150 a frame, into assets/views.
+"""The weapon in your hands, 400 by 300 a frame, into assets/views.
 
 The hands sit at the bottom of the cell and the barrel runs up the screen,
 which is the same place the code drawn art puts them, so a file dropped in
@@ -22,7 +22,9 @@ import sys
 
 from PIL import Image, ImageDraw
 
-W, H = 200, 150
+W, H = 400, 300
+GRID_W = 200
+S = W // GRID_W
 
 # Where the grip sits and how big the weapon is drawn, copied from the code
 # so the two kinds of art can be mixed frame by frame.
@@ -74,6 +76,10 @@ class View:
         return self.at(OX, OY + lift, SC, 0.0)
 
     def p(self, x, y):
+        """Local point to a point on the 200 by 150 grid. It stays in grid
+        units, because the art passes points back through at(): off_hand and
+        the hatchet both place themselves at p() of somewhere. The scale to
+        the real view goes on at the draw call instead."""
         if self.rot:
             c, s = math.cos(self.rot), math.sin(self.rot)
             x, y = x * c - y * s, x * s + y * c
@@ -82,7 +88,8 @@ class View:
 
     # --------------------------------------------------------------- shapes
     def poly(self, pts, c):
-        self.d.polygon([self.p(x, y) for x, y in pts], fill=c)
+        self.d.polygon([(px * S, py * S) for px, py in
+                        (self.p(x, y) for x, y in pts)], fill=c)
 
     def rect(self, x, y, w, h, c):
         self.poly(((x, y), (x + w, y), (x + w, y + h), (x, y + h)), c)
@@ -90,26 +97,30 @@ class View:
     def disc(self, x, y, r, c):
         cx, cy = self.p(x, y)
         rr = r * self.s
-        self.d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=c)
+        self.d.ellipse([(cx - rr) * S, (cy - rr) * S,
+                        (cx + rr) * S, (cy + rr) * S], fill=c)
 
     def tube(self, cx, yTop, wTop, yBot, wBot, c):
         self.poly(((cx - wTop * 0.5, yTop), (cx + wTop * 0.5, yTop),
                    (cx + wBot * 0.5, yBot), (cx - wBot * 0.5, yBot)), c)
 
-    def outline(self):
-        src = self.im.load()
-        edge = []
-        for y in range(H):
-            for x in range(W):
-                if src[x, y][3] != 0:
-                    continue
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < W and 0 <= ny < H and src[nx, ny][3] > 128:
-                        edge.append((x, y))
-                        break
-        for x, y in edge:
-            self.im.putpixel((x, y), EDGE)
+    def outline(self, width=S):
+        """A dark line round the silhouette, width real pixels thick. Each
+        pass walks the edge the one before it left, so it grows outwards."""
+        for _ in range(width):
+            src = self.im.load()
+            edge = []
+            for y in range(H):
+                for x in range(W):
+                    if src[x, y][3] != 0:
+                        continue
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < W and 0 <= ny < H and src[nx, ny][3] > 128:
+                            edge.append((x, y))
+                            break
+            for x, y in edge:
+                self.im.putpixel((x, y), EDGE)
 
 
 # ----------------------------------------------------------------- the hands
@@ -117,14 +128,24 @@ def lighten(c):
     return tuple(min(255, int(v * 1.14)) for v in c[:3])
 
 
+def darken(c, f=0.72):
+    return tuple(int(v * f) for v in c[:3])
+
+
 def finger(v, x, y, w, h, base, shade):
     """One finger round the front of the grip: a bar with the knuckle end
     rounded off on the left, a lit top edge and the crease of the next one
-    under it."""
+    under it. At 400 across there is room for the joint as well, which is
+    what stops four of these reading as a stack of sausages."""
     v.rect(x, y, w, h, base)
     v.disc(x, y + h * 0.5, h * 0.5, base)
-    v.rect(x, y, w, 2, lighten(base))
-    v.rect(x - 1, y + h - 2, w + 1, 2, shade)
+    v.rect(x, y, w, 1.5, lighten(base))
+    v.rect(x - 1, y + h - 1.5, w + 1, 1.5, shade)
+
+    # the middle joint, a shade across and a highlight on the near side of it
+    v.rect(x + w * 0.42, y + 1, 1.5, h - 2, shade)
+    v.rect(x + w * 0.42 + 1.5, y + 1.5, 1, h - 3, lighten(base))
+    v.disc(x + 1.5, y + h * 0.5, h * 0.28, lighten(base))
 
 
 def fists(v, spread=0):
@@ -152,10 +173,19 @@ def fists(v, spread=0):
     v.poly(((hx + 10, cy - 36), (hx - 2, cy - 35), (hx - 4, cy - 30),
             (hx + 8, cy - 29)), SKIN)
 
+    # a knuckle on each finger where it comes over the top of the grip
+    for i in range(4):
+        v.disc(hx - 16, cy - 24 + i * 9, 2.4, SKIN_HI)
+
     # the wrist, and the sleeve of the shirt off the guard's back
     v.rect(hx - 6, cy + 6, 28, 12, SKIN_LO)
     v.rect(hx - 8, cy + 14, 32, 15, CUFF)
     v.rect(hx - 8, cy + 14, 32, 3, CUFF_HI)
+    v.rect(hx - 8, cy + 26, 32, 3, (104, 109, 119))
+
+    # two folds in the sleeve, because a flat band reads as a cuff of metal
+    v.rect(hx - 4, cy + 17, 2, 9, (112, 117, 127))
+    v.rect(hx + 8, cy + 18, 2, 8, (112, 117, 127))
 
     # what is left of the guard, specks of it rather than wounds
     v.rect(hx + 4, cy - 26, 6, 2, DRIED)
@@ -209,6 +239,12 @@ def hatchet_body(v, x, y, rot, s=1.0):
     v.poly(((-8, -96), (24, -106), (32, -82), (-8, -74)), (140, 144, 152))
     v.poly(((22, -104), (32, -82), (27, -79), (17, -100)), (226, 230, 238))
     v.poly(((-8, -82), (14, -88), (18, -79), (-8, -74)), (96, 99, 106))
+
+    # the line where the bevel starts, and the binding on the haft
+    v.poly(((18, -102), (26, -84), (23, -83), (15, -100)), (170, 174, 182))
+
+    for i in range(3):
+        v.rect(1, -72 + i * 6, 7, 2.5, (40, 26, 16))
     v.rect(-10, -26, 20, 18, (46, 46, 50))
     v.rect(-10, -26, 20, 3, (76, 76, 82))
 
@@ -237,16 +273,31 @@ def revolver_body(v, sil, hollow):
     v.rect(-14, -80, 28, 22, (79, 82, 90))
     v.rect(-14, -80, 28, 2, GUN_HI)
 
+    # the flutes between the chambers, which is what a cylinder looks like
+    for i in (-1, 0, 1):
+        v.rect(i * 9 - 1, -78, 2, 18, (62, 65, 72))
+
     if hollow:
         v.rect(-11, -78, 22, 18, (18, 18, 20))
     else:
         v.disc(0, -69, 9, (56, 56, 64))
         v.disc(0, -69, 3, (18, 18, 20))
+        v.disc(-2.5, -71.5, 2, (104, 107, 115))
 
     v.tube(0, -122, 14, -78, 20, GUN)
     v.tube(-5, -120, 3, -78, 4, GUN_HI)
     v.tube(6, -120, 3, -78, 4, GUN_LO)
     v.rect(-4, -126, 8, 6, GUN_LO)
+
+    # the front sight on the muzzle, the ejector rod under the barrel, and
+    # the checkering on the grip
+    v.poly(((-2.5, -126), (2.5, -126), (2.5, -133), (-2.5, -133)), (92, 95, 103))
+    v.rect(-3, -100, 6, 20, (50, 52, 58))
+    v.rect(-3, -100, 2, 20, (88, 91, 99))
+
+    for i in range(5):
+        v.rect(-12 + i * 5, -36, 1.5, 30, darken(WOOD))
+        v.rect(-11 + i * 5, -36, 1, 30, WOOD_HI)
 
     if sil:
         v.tube(0, -132, 22, -86, 28, (38, 40, 46))
@@ -268,8 +319,14 @@ def revolver_cylinder(v, x, y, loaded):
 
     for i in range(6):
         a = i / 6 * math.pi * 2
-        v.disc(math.cos(a) * 7, math.sin(a) * 7, 3.4,
-               BRASS if i < loaded else (15, 15, 18))
+        x, y = math.cos(a) * 7, math.sin(a) * 7
+        v.disc(x, y, 3.4, BRASS if i < loaded else (15, 15, 18))
+
+        # a primer in the middle of each round that is still there
+        if i < loaded:
+            v.disc(x, y, 1.4, BRASS_HI)
+        else:
+            v.disc(x - 0.6, y - 0.6, 2.6, (30, 30, 34))
 
     v.disc(0, 0, 2.5, GUN_HI)
     v.at(*keep)
@@ -347,6 +404,16 @@ def uzi_body(v, sil, mag):
     v.rect(-18, -74, 4, 30, (82, 84, 92))
     v.rect(14, -70, 8, 10, (43, 43, 48))
     v.disc(-2, -50, 7, GUN_LO)
+
+    # the cocking handle on top of the receiver and the port it rides in
+    v.rect(-14, -77, 16, 4, (96, 99, 107))
+    v.rect(-14, -77, 16, 1.5, (134, 138, 148))
+    v.rect(-10, -73, 20, 2, (26, 26, 30))
+
+    # the ejection port, open, and the rear sight behind it
+    v.rect(6, -68, 11, 7, (20, 20, 23))
+    v.rect(6, -68, 11, 1.5, (86, 88, 96))
+    v.rect(16, -79, 5, 4, (96, 99, 107))
     v.tube(0, -116, 13, -72, 18, GUN)
     v.tube(-4, -114, 3, -72, 4, GUN_HI)
     v.rect(-5, -120, 10, 5, GUN_LO)
@@ -368,6 +435,12 @@ def uzi_mag(v, x, y, rot=0.0):
     v.poly(((-9, 0), (-3, 0), (-5, 42), (-7, 42)), (69, 69, 77))
     v.rect(-8, 1, 16, 4, BRASS)
     v.rect(-8, 1, 16, 1, BRASS_HI)
+
+    # witness holes down the back of it, and the floor plate
+    for i in range(4):
+        v.rect(-1, 8 + i * 8, 4, 4, (26, 26, 30))
+
+    v.rect(-8, 38, 19, 4, (34, 34, 39))
     v.at(*keep)
 
 
