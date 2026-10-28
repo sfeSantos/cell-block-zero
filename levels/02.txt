@@ -1,6 +1,7 @@
 ; Cell Block Zero level file
 ; tiles: # stone  = brick  % cell wall  & metal  ~ rock  * poster
 ;        L locker (press space)   / a section of wall that slides back
+;        ! alarm panel: a guard who reaches it shuts the block down
 ; doors: | steel  + bars  r/b/y locked  X exit switch
 ; start: N S W E   guards: 1 2 3   4 dog   z asleep   Z sergeant asleep
 ; pickups: u uzi  l launcher  g grenades  f flashes  a revolver rounds
@@ -34,7 +35,7 @@ bluekey = locker
 #========|==========#====|=========|====#=======b========#
 #...................#...................#....1...........#
 #..&&2...&&&...&&&..#...................#......L.........#
-#...................#...=====...====....#...&&&&........X#
+#...................#...==!==...====....#...&&&&........X#
 #..&&&...&&&...&&&..#...=...=...=..=....#...&&&&........X#
 #........K..........#...=.U.|...|.a=....#.......1........#
 #...................#...=====...====....#....o...........#
