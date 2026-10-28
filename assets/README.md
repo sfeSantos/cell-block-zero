@@ -24,7 +24,7 @@ about two thirds of the width looks right next to the rest.
 | `dg.<frame>.png` | dog |
 | `con.<frame>.png` | prisoner |
 | `prop.skeleton.png`, `prop.hanged.png`, `prop.body.png`, `prop.remains.png`, `prop.stain.png`, `prop.deadguard.png` | scenery |
-| `item.<name>.png` | pickups: `uzi`, `launcher`, `grenades`, `flashes`, `bullets`, `ammobox`, `rockets`, `vest`, `vestheavy`, `medkit`, `snack`, `silencer`, `redkey`, `bluekey`, `yellowkey`, `knife`, `trap`, `trapset`, `trapsprung` |
+| `item.<name>.png` | pickups: `uzi`, `launcher`, `grenades`, `flashes`, `bullets`, `clips`, `ammobox`, `rockets`, `vest`, `vestheavy`, `medkit`, `snack`, `silencer`, `redkey`, `bluekey`, `yellowkey`, `knife`, `trap`, `trapset`, `trapsprung` |
 | `fx.<name>.png` | effects: `knife`, `rocket`, `grenade`, `flash`, `boom1` to `boom4`, `pop`, `blood`, `spark`, `smoke` |
 
 Guard and prisoner frames: `idle`, `walk1` to `walk4`, `aim`, `fire`, `pain`,
@@ -71,10 +71,11 @@ Pillow:
 
     python3 tools/guards.py assets/sprites     the three ranks, 13 frames each
     python3 tools/dogs.py assets/sprites       the dogs
+    python3 tools/props.py assets/sprites      the pickups, the bodies, the explosions
     python3 tools/weapons.py assets/views      the weapons in your hands
     python3 tools/walls.py assets/walls clean  walls, doors and ground
 
-None of the three puts blood on a wall or on the floor. One file is painted
+None of these paints blood into a wall or a ground tile. One file is painted
 on every tile of its kind, so a stain in the texture would run the length of
 the corridor: the blood on the ground is `prop.stain`, which the game drops
 on a dozen or so single tiles of each block.
