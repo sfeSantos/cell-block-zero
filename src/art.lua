@@ -1,13 +1,22 @@
 -- Every sprite is drawn into one canvas at load time: guards, pickups,
--- projectiles, explosions, and the weapon the player holds. Cells are 64 by 64
--- and a cell always stands for a square one tile wide and one tile tall, so the
--- raycaster never needs per sprite measurements.
+-- projectiles, explosions, and the weapon the player holds. Cells are 128 by
+-- 128 and a cell always stands for a square one tile wide and one tile tall, so
+-- the raycaster never needs per sprite measurements.
+--
+-- The drawing below is all written against a 64 wide grid, which is the size
+-- the cell used to be. GRID is that grid and CELL is what it is painted into,
+-- and push() scales one to the other, so a coordinate here means a sixty
+-- fourth of a tile whatever the cell grows to. The files in assets/ are drawn
+-- at the full CELL, which is the whole point: they carry detail this code
+-- cannot, and they win wherever they exist.
 
 local textures = require("src.textures")
 
 local art = {}
 
-local CELL = 64
+local CELL = 128
+local GRID = 64
+local SCALE = CELL / GRID
 local COLS = 10
 local ROWS = 10
 
@@ -31,6 +40,7 @@ local function push(name)
     lg.push()
     lg.setScissor(c.x, c.y, CELL, CELL)
     lg.translate(c.x, c.y)
+    lg.scale(SCALE)
 end
 
 local function pop()
@@ -898,9 +908,19 @@ end
 -- assets/views, and tools/weapons.py writes the files that take its place.
 -- The two have to be changed together or the game stops looking the same with
 -- an empty assets folder, which is the one thing the fallback is for.
-art.VIEW_W = 200
-art.VIEW_H = 150
-art.VIEW_COLS = 10
+art.VIEW_W = 400
+art.VIEW_H = 300
+
+-- Same arrangement as the sprites: the builders below are written against the
+-- 200 by 150 the view used to be, and the sheet is painted at twice that.
+local VIEW_GRID_W = 200
+local VIEW_SCALE = art.VIEW_W / VIEW_GRID_W
+
+-- How wide the sheet is packed, in frames. Not a limit on a weapon's frames:
+-- the 42 of them are laid out end to end and wrapped, because a row for every
+-- weapon at ten frames wide would be a 4000 pixel texture and some cards
+-- still stop at 4096.
+art.VIEW_PACK = 7
 
 local views = {}
 
@@ -1626,7 +1646,14 @@ function art.load()
     end
 
     local vw, vh = art.VIEW_W, art.VIEW_H
-    local viewSheet = lg.newCanvas(vw * art.VIEW_COLS, vh * #art.VIEW_ORDER)
+    local pack = art.VIEW_PACK
+    local total = 0
+
+    for _, name in ipairs(art.VIEW_ORDER) do
+        total = total + art.VIEW_FRAMES[name]
+    end
+
+    local viewSheet = lg.newCanvas(vw * pack, vh * math.ceil(total / pack))
     viewSheet:setFilter("nearest", "nearest")
 
     lg.push("all")
@@ -1635,24 +1662,31 @@ function art.load()
     lg.setBlendMode("alpha")
 
     art.viewQuads = {}
-    for row, name in ipairs(art.VIEW_ORDER) do
+    local slot = 0
+
+    for _, name in ipairs(art.VIEW_ORDER) do
         art.viewQuads[name] = {}
+
         for col = 1, art.VIEW_FRAMES[name] do
+            local x, y = (slot % pack) * vw, math.floor(slot / pack) * vh
+            slot = slot + 1
+
             lg.push()
-            lg.setScissor((col - 1) * vw, (row - 1) * vh, vw, vh)
-            lg.translate((col - 1) * vw, (row - 1) * vh)
+            lg.setScissor(x, y, vw, vh)
+            lg.translate(x, y)
+            lg.scale(VIEW_SCALE)
             views[name](col)
             lg.setScissor()
             lg.pop()
-            local file = string.format("%s/%s.%d.png", art.VIEW_DIR, name, col)
-            local image = readImage(file)
+
+            local image = readImage(string.format("%s/%s.%d.png", art.VIEW_DIR, name, col))
+
             if image then
-                paintOver(image, (col - 1) * vw, (row - 1) * vh, vw, vh)
+                paintOver(image, x, y, vw, vh)
                 art.loaded.views = art.loaded.views + 1
             end
 
-            art.viewQuads[name][col] = lg.newQuad((col - 1) * vw, (row - 1) * vh,
-                vw, vh, viewSheet:getDimensions())
+            art.viewQuads[name][col] = lg.newQuad(x, y, vw, vh, viewSheet:getDimensions())
         end
     end
 
