@@ -1,4 +1,4 @@
-"""The pickups, the bodies and the explosions, one 64 by 64 file a sprite,
+"""The pickups, the bodies and the explosions, one 128 by 128 file a sprite,
 written into assets/sprites.
 
 A cell stands for a square one tile wide and one tile tall and the bottom edge
@@ -13,6 +13,13 @@ The blood and the explosions are the exception. They are glows, so they get a
 radial falloff and no outline at all, and three of them are drawn so small in
 the world that colour is the only thing left of them.
 
+Written against a 64 wide grid, the size the cell used to be, and Cell scales
+it into the real one. A box covers the half open range [x0, x1 + 1) in grid
+units, so a fractional end extends it rather than halving it: box(10, y, 10.5,
+y) comes out three pixels wide at S = 2, not one. Positions are what the
+fractions are really for, a half grid step being one real pixel. Same
+arrangement as tools/guards.py.
+
     python3 tools/props.py assets/sprites
 """
 
@@ -22,7 +29,10 @@ import sys
 
 from PIL import Image, ImageChops, ImageDraw
 
-CELL = 64
+CELL = 128
+GRID = 64
+S = CELL // GRID
+
 FLOOR = 60
 EDGE = (16, 15, 18, 255)
 
@@ -105,6 +115,7 @@ def gradient(cx, cy, rx, ry, stops):
     and it is what every glow in here is made of."""
     layer = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
     px = layer.load()
+    cx, cy, rx, ry = cx * S, cy * S, rx * S, ry * S
     x0, x1 = max(0, int(cx - rx) - 1), min(CELL - 1, int(cx + rx) + 1)
     y0, y1 = max(0, int(cy - ry) - 1), min(CELL - 1, int(cy + ry) + 1)
 
@@ -120,34 +131,44 @@ def gradient(cx, cy, rx, ry, stops):
 
 
 class Cell:
+    """Grid units in, pixels out, so the art is written once and comes out at
+    whatever CELL is."""
 
     def __init__(self):
         self.im = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
         self.d = ImageDraw.Draw(self.im, "RGBA")
 
     def box(self, x0, y0, x1, y1, c):
-        self.d.rectangle([x0, y0, x1, y1], fill=c)
+        self.d.rectangle([x0 * S, y0 * S, (x1 + 1) * S - 1, (y1 + 1) * S - 1], fill=c)
 
     def poly(self, pts, c):
-        self.d.polygon(pts, fill=c)
+        self.d.polygon([(x * S, y * S) for x, y in pts], fill=c)
 
     def disc(self, cx, cy, r, c):
-        self.d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=c)
+        self.oval(cx, cy, r, r, c)
 
     def oval(self, cx, cy, rx, ry, c):
-        self.d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=c)
+        self.d.ellipse([(cx - rx) * S, (cy - ry) * S,
+                        (cx + rx) * S, (cy + ry) * S], fill=c)
 
     def ring(self, cx, cy, rx, ry, c, w=1):
-        self.d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=c, width=w)
+        self.d.ellipse([(cx - rx) * S, (cy - ry) * S,
+                        (cx + rx) * S, (cy + ry) * S], outline=c, width=int(w * S))
 
     def line(self, x0, y0, x1, y1, c, w=1):
-        self.d.line([x0, y0, x1, y1], fill=c, width=w)
+        self.d.line([x0 * S, y0 * S, x1 * S, y1 * S], fill=c, width=int(w * S))
 
     def plate(self, x0, y0, x1, y1, c, hi=None, lo=None):
-        """A flat slab with the light coming from above."""
+        """A flat slab with the light coming from above. The lit and dark
+        edges are one real pixel now rather than one grid unit, which is what
+        keeps a small pickup from looking like it is made of stripes."""
         self.box(x0, y0, x1, y1, c)
-        self.box(x0, y0, x1, y0, hi or lighten(c))
-        self.box(x0, y1, x1, y1, lo or darken(c))
+        self.row(x0, x1, y0 * S, hi or lighten(c))
+        self.row(x0, x1, (y1 + 1) * S - 1, lo or darken(c))
+
+    def row(self, x0, x1, py, c):
+        """One real pixel row across a span of grid columns."""
+        self.d.rectangle([x0 * S, py, (x1 + 1) * S - 1, py], fill=c)
 
     def tube(self, x0, y0, x1, y1, c, hi=None, lo=None):
         """A cylinder lying on its side: one bright line along the top and a
@@ -164,26 +185,29 @@ class Cell:
         """Take a bite out of what is already drawn, which is how the keys get
         the hole through the bow."""
         mask = Image.new("L", (CELL, CELL), 255)
-        ImageDraw.Draw(mask).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=0)
+        ImageDraw.Draw(mask).ellipse([(cx - rx) * S, (cy - ry) * S,
+                                      (cx + rx) * S, (cy + ry) * S], fill=0)
         self.im.putalpha(ImageChops.multiply(self.im.split()[3], mask))
 
-    def outline(self, c=EDGE):
-        """One dark pixel around everything solid, so the shape still reads
-        against a dark corridor."""
-        src = self.im.load()
-        edge = []
-        for y in range(CELL):
-            for x in range(CELL):
-                if src[x, y][3] != 0:
-                    continue
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < CELL and 0 <= ny < CELL and src[nx, ny][3] > 128:
-                        edge.append((x, y))
-                        break
+    def outline(self, c=EDGE, width=S):
+        """A dark line around everything solid, width real pixels thick, so
+        the shape still reads against a dark corridor. Each pass walks the
+        edge the last one left, so it grows outwards and never eats in."""
+        for _ in range(width):
+            src = self.im.load()
+            edge = []
+            for y in range(CELL):
+                for x in range(CELL):
+                    if src[x, y][3] != 0:
+                        continue
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < CELL and 0 <= ny < CELL and src[nx, ny][3] > 128:
+                            edge.append((x, y))
+                            break
 
-        for x, y in edge:
-            self.im.putpixel((x, y), c)
+            for x, y in edge:
+                self.im.putpixel((x, y), c)
 
 
 def pool(cell, cx, cy, rx, ry, a=160):
@@ -227,6 +251,15 @@ def item_uzi():
     c.box(26, 53, 32, 54, BRASS_LO)
     c.poly([(35, 50), (42, 50), (40, 59), (35, 59)], BLACK_HI)
     c.box(33, 49, 36, 52, BLACK_LO)
+
+    # the trigger inside its guard, the sight on the top cover, and the
+    # floor plate of the magazine
+    c.row(33, 36, 52 * S, (96, 96, 102))
+    c.box(33.5, 50, 34, 51, STEEL_LO)
+    c.box(26, 42, 27, 43, STEEL)
+    c.box(39, 42, 40, 43, STEEL)
+    c.plate(24, 59, 34, 60, STEEL_LO, STEEL_HI)
+    c.row(16, 44, 41 * S, (104, 104, 110))
     c.outline()
 
     return grounded(c, rx=19)
@@ -244,6 +277,13 @@ def item_launcher():
     c.plate(13, 29, 20, 34, (62, 52, 40), (92, 78, 60))
     c.poly([(26, 48), (34, 48), (32, 60), (27, 60)], OLIVE_LO)
     c.box(27, 51, 31, 52, (40, 44, 30))
+
+    # a band round the tube, the open sight over it, and a stencil
+    c.box(30, 34, 31, 48, OLIVE_LO)
+    c.row(30, 31, 35 * S, OLIVE_HI)
+    c.ring(25.5, 27.5, 2.5, 2.5, STEEL_HI)
+    c.box(39, 38, 45, 39, (196, 186, 120))
+    c.box(39, 41, 43, 42, (196, 186, 120))
     c.outline()
 
     return grounded(c, rx=22)
@@ -253,11 +293,21 @@ def pineapple(c, cx, cy, r, front):
     body = OLIVE if front else OLIVE_LO
     c.disc(cx, cy, r, body)
     c.oval(cx - r // 3, cy - r // 2, r // 2, max(2, r // 3), lighten(body, 1.45))
+
+    # the cast squares, both ways, which is what makes it a pineapple and
+    # not a ball
     for i in (-1, 0, 1):
         c.box(cx - r + 2, cy + i * 4, cx + r - 2, cy + i * 4, darken(body, 0.72))
 
+    for i in (-1, 0, 1):
+        c.box(cx + i * 4, cy - r + 2, cx + i * 4, cy + r - 2, darken(body, 0.78))
+
     c.box(cx - 2, cy - r - 1, cx + 2, cy - r + 2, IRON)
     c.box(cx - 2, cy - r - 1, cx + 2, cy - r - 1, STEEL_HI)
+
+    # the spoon down the side, held on by the pin
+    c.box(cx + 2, cy - r - 1, cx + 3, cy - r + 5, STEEL_LO)
+    c.row(cx + 2, cx + 3, (cy - r - 1) * S, STEEL_HI)
     c.ring(cx + 5, cy - r - 2, 3, 3, STEEL_HI)
 
 
@@ -276,8 +326,16 @@ def stun(c, x, top, front):
     c.box(x, top + 7, x + 11, top + 12, WHITE)
     c.box(x, top + 7, x + 11, top + 7, (244, 244, 238))
     c.box(x, top + 14, x + 11, top + 15, (198, 166, 44))
+
+    # ribs down the can and a stencil on the white band
+    for i in range(4):
+        c.box(x, top + 19 + i * 4, x + 11, top + 19 + i * 4, darken(body, 0.78))
+
+    c.box(x + 2, top + 9, x + 4, top + 10, (62, 62, 68))
+    c.box(x + 6, top + 9, x + 9, top + 10, (62, 62, 68))
     c.box(x + 3, top - 4, x + 8, top, IRON)
     c.box(x + 3, top - 4, x + 8, top - 4, STEEL_HI)
+    c.box(x + 5, top - 7, x + 6, top - 4, STEEL_LO)
 
 
 def item_flashes():
@@ -294,11 +352,17 @@ def standing_round(c, x, base, h):
     c.box(x, base - h, x, base, BRASS_HI)
     c.poly([(x, base - h), (x + 3, base - h), (x + 1, base - h - 4)], COPPER)
 
+    # the rim at the head of the case, and the crimp into the bullet
+    c.row(x, x + 3, (base - 1) * S, BRASS_LO)
+    c.row(x, x + 3, (base - h) * S, lighten(COPPER, 1.25))
+
 
 def lying_round(c, x, y, w):
     c.box(x, y, x + w, y + 3, BRASS)
     c.box(x, y, x + w, y, BRASS_HI)
     c.poly([(x + w, y), (x + w + 4, y + 1), (x + w, y + 3)], COPPER)
+    c.box(x, y, x + 0.5, y + 3, BRASS_LO)
+    c.box(x + w - 1, y, x + w - 0.5, y + 3, BRASS_LO)
 
 
 def item_bullets():
@@ -323,6 +387,11 @@ def item_clips():
         c.plate(x, 34, x + 12, 60, body, STEEL_HI, (38, 39, 43))
         c.box(x + 3, 38, x + 4, 57, darken(body, 0.72))
         c.box(x + 9, 38, x + 10, 57, darken(body, 0.72))
+
+        # witness holes down the back, so you can see what is left in it
+        for i in range(4):
+            c.box(x + 5.5, 39 + i * 5, x + 7.5, 41 + i * 5, darken(body, 0.5))
+
         c.plate(x + 3, 30, x + 9, 35, BRASS, BRASS_HI, BRASS_LO)
 
     c.plate(16, 40, 46, 45, TAPE, (74, 70, 62), (34, 32, 28))
@@ -344,6 +413,14 @@ def item_ammobox():
     c.plate(24, 51, 42, 57, OLIVE_LO, OLIVE)
     c.box(27, 53, 39, 54, CANVAS_HI)
     c.box(27, 55, 35, 56, CANVAS_HI)
+
+    # the latch that holds the lid, and rivets down both corners
+    c.plate(29, 44, 37, 48, IRON, STEEL_HI, BLACK_LO)
+    c.box(31, 45.5, 35, 46.5, STEEL_HI)
+
+    for x in (16, 50):
+        for y in (39, 45, 51, 57):
+            c.box(x, y, x + 1, y + 1, STEEL_HI)
     c.plate(26, 30, 40, 36, IRON, STEEL_HI)
     c.punch(33, 31, 5, 2)
     lying_round(c, 1, 56, 8)
@@ -363,6 +440,11 @@ def rocket(c, cx, top, front):
     c.poly([(cx - 8, top + 28), (cx - 4, top + 28), (cx - 4, top + 21)], IRON)
     c.poly([(cx + 8, top + 28), (cx + 4, top + 28), (cx + 4, top + 21)], STEEL_LO)
     c.box(cx - 2, top + 26, cx + 2, top + 28, STEEL_LO)
+
+    # the ring where the warhead screws on, and a stencil below it
+    c.row(cx - 4, cx + 4, (top + 8) * S, lighten(body, 1.6))
+    c.box(cx - 3, top + 20, cx + 1, top + 21, (206, 198, 150))
+    c.box(cx - 3, top + 23, cx - 1, top + 24, (206, 198, 150))
 
 
 def item_rockets():
@@ -384,12 +466,22 @@ def vest_shape(body, plate_c, mark=None):
         c.plate(x0, 21, x1, 34, col, hi)
         c.box(x0, 26, x1, 28, TAPE)
 
+        # a buckle on each strap, and the stitching down the side of it
+        c.box(x0 + 1, 26.5, x1 - 1, 27.5, (158, 150, 130))
+        c.box(x0 + 1, 22, x0 + 1.5, 25, darken(col, 0.72))
+        c.box(x1 - 1.5, 22, x1 - 1, 25, darken(col, 0.72))
+
     c.poly([(17, 31), (47, 31), (49, 45), (45, 60), (19, 60), (15, 45)], body)
     c.poly([(32, 31), (47, 31), (49, 45), (45, 60), (32, 60)], lo)
     c.box(17, 31, 31, 32, hi)
     c.box(31, 32, 33, 60, darken(body, 0.5))
     c.plate(19, 36, 45, 44, plate_c, lighten(plate_c, 1.5), darken(plate_c, 0.6))
     c.plate(19, 47, 45, 55, plate_c, lighten(plate_c, 1.5), darken(plate_c, 0.6))
+
+    # webbing loops across both plates, the thing you actually hang kit from
+    for y in (39, 50):
+        for i in range(5):
+            c.box(21 + i * 5, y, 21.5 + i * 5, y + 4, darken(plate_c, 0.72))
 
     if mark:
         c.plate(28, 48, 36, 54, mark)
@@ -411,11 +503,20 @@ def item_medkit():
     c = Cell()
     c.plate(13, 34, 51, 60, WHITE, (242, 242, 236), WHITE_LO)
     c.box(13, 41, 51, 42, WHITE_LO)
+
+    # the two catches that hold the lid shut
+    for x in (18, 42):
+        c.plate(x, 39, x + 4, 44, STEEL_LO, STEEL_HI, (34, 35, 39))
+        c.box(x + 1, 41, x + 3, 42, STEEL_HI)
+
     c.box(28, 44, 36, 58, RED)
     c.box(19, 48, 45, 54, RED)
     c.box(28, 44, 36, 44, RED_HI)
     c.box(19, 48, 27, 48, RED_HI)
     c.box(37, 48, 45, 48, RED_HI)
+    # the shadow the cross throws on the white, so it sits in the lid
+    c.row(28, 36, 59 * S, darken(RED, 0.55))
+    c.row(19, 45, 55 * S, darken(RED, 0.55))
     c.plate(29, 38, 35, 42, STEEL_LO, STEEL_HI)
     c.plate(25, 28, 39, 34, WHITE_LO, WHITE)
     c.punch(32, 29, 5, 2)
@@ -431,9 +532,15 @@ def item_snack():
     c.oval(23, 47, 10, 7, (168, 124, 70))
     c.oval(21, 44, 6, 3, (206, 164, 104))
     c.box(18, 47, 28, 48, (128, 90, 50))
+
+    # three cuts across the crust
+    for i in range(3):
+        c.box(18 + i * 5, 42 + i * 0.5, 22 + i * 5, 43 + i * 0.5, (134, 96, 54))
+
     c.disc(42, 46, 7, (150, 52, 44))
     c.oval(39, 43, 3, 2, (198, 86, 74))
     c.box(42, 37, 43, 40, (74, 58, 38))
+    c.poly([(43, 38), (49, 36), (47, 40)], (86, 118, 56))
     c.outline()
 
     return grounded(c, rx=22, ry=3)
@@ -446,7 +553,13 @@ def item_silencer():
         c.box(x, 45, x + 1, 55, (22, 22, 25))
 
     c.plate(46, 46, 53, 54, STEEL_LO, STEEL_HI, (34, 35, 39))
+
+    # the thread it screws on by
+    for i in range(4):
+        c.box(47 + i * 1.5, 46, 47.5 + i * 1.5, 54, (44, 45, 50))
+
     c.oval(15, 50, 2, 5, (10, 10, 12))
+    c.oval(15, 50, 1, 3, (4, 4, 5))
     c.outline()
 
     return grounded(c, rx=20, ry=3)
@@ -461,6 +574,11 @@ def key_shape(col):
     c.oval(20, 40, 7, 4, hi)
     c.punch(22, 45, 5, 5)
     c.plate(31, 43, 53, 49, col, hi, lo)
+
+    # the collar where the bow meets the shaft
+    c.box(32, 41, 34, 51, col)
+    c.row(32, 34, 41 * S, hi)
+    c.box(34.5, 41, 35, 51, lo)
 
     for x in (39, 47):
         c.box(x, 49, x + 3, 57, col)
@@ -493,6 +611,12 @@ def item_knife():
     c.plate(27, 44, 30, 57, STEEL_LO, STEEL_HI, (34, 35, 39))
     c.poly([(30, 46), (54, 50), (30, 55)], STEEL)
     c.poly([(30, 46), (54, 50), (32, 51)], (188, 192, 200))
+
+    # the fuller down the middle of the blade, and two rivets in the grip
+    c.poly([(32, 49.5), (48, 50.5), (32, 51.5)], STEEL_LO)
+
+    for x in (13, 22):
+        c.box(x, 49.5, x + 1, 51, (142, 146, 154))
     c.outline()
 
     return grounded(c, rx=21, ry=3)
@@ -603,6 +727,11 @@ def prop_skeleton():
     c.box(27, 34, 37, 38, BONE_LO)
     c.box(27, 29, 31, 33, (18, 16, 16))
     c.box(34, 29, 38, 33, (18, 16, 16))
+
+    # a brow ridge over each socket and the crack across the crown
+    c.row(27, 31, 28 * S, BONE_SHADE)
+    c.row(34, 38, 28 * S, BONE_SHADE)
+    c.poly([(30, 24), (32, 27), (34, 24.5)], BONE_SHADE)
     c.box(31, 34, 33, 36, (24, 22, 22))
     for x in range(28, 37, 3):
         c.box(x, 36, x + 1, 38, (30, 28, 28))
@@ -630,6 +759,12 @@ def prop_hanged():
     c.box(29, 28, 35, 30, darken(CON_SKIN, 0.8))
     c.plate(27, 29, 37, 32, ROPE, ROPE_HI)
 
+    # the knot, off to one side of the neck the way it ends up
+    c.plate(36, 27, 40, 33, darken(ROPE, 0.88), ROPE_HI, darken(ROPE, 0.7))
+
+    for i in range(2):
+        c.row(36, 40, (29 + i * 2) * S, darken(ROPE, 0.66))
+
     c.poly([(23, 32), (41, 32), (38, 48), (26, 48)], CON_CLOTH)
     c.poly([(32, 32), (41, 32), (38, 48), (32, 48)], CON_CLOTH_LO)
     for i in range(3):
@@ -643,10 +778,14 @@ def prop_hanged():
     c.plate(33, 47, 38, 58, darken(CON_TROUSER, 0.85))
     c.disc(28, 59, 3, CON_SKIN)
     c.disc(35, 59, 3, CON_SKIN_LO)
+
+    # bare feet, toes pointed down, because that is the detail that tells
+    c.row(26, 30, 61 * S, darken(CON_SKIN, 0.78))
+    c.row(33, 37, 61 * S, darken(CON_SKIN, 0.7))
     c.outline()
 
     # hanging off true, turning on the rope
-    c.im = c.im.rotate(-7, resample=Image.NEAREST, center=(32, 14))
+    c.im = c.im.rotate(-7, resample=Image.NEAREST, center=(32 * S, 14 * S))
 
     # the stool he kicked over
     stool = Cell()
@@ -678,8 +817,15 @@ def prop_body():
     c.disc(16, 49, 7, CON_SKIN)
     c.oval(14, 46, 4, 3, lighten(CON_SKIN, 1.1))
     c.box(11, 43, 21, 46, CON_HAIR)
+    c.row(11, 21, 43 * S, lighten(CON_HAIR, 1.4))
     c.poly([(26, 40), (34, 37), (37, 41), (29, 44)], CON_CLOTH)
+
+    # the hand at the end of the arm, fingers apart
     c.disc(37, 39, 3, CON_SKIN_LO)
+
+    for i in range(3):
+        c.box(38 + i * 0.5, 36.5 + i * 1.5, 40 + i * 0.5, 37.5 + i * 1.5, CON_SKIN)
+
     c.outline()
 
     return Image.alpha_composite(under.im, c.im)
@@ -742,6 +888,12 @@ def prop_deadguard():
     # the revolver that fell out of his hand, which is where yours comes from
     c.plate(44, 33, 58, 38, (46, 46, 51), (86, 87, 94), (28, 28, 32))
     c.box(50, 38, 54, 42, (46, 46, 51))
+    c.disc(48, 35.5, 2.5, (32, 32, 36))
+    c.ring(48, 35.5, 2.5, 2.5, (96, 97, 104))
+    c.box(44, 34.5, 46, 35.5, (18, 18, 20))
+
+    # the badge on the cap, so he is plainly one of theirs
+    c.box(14, 41, 18, 43, (168, 156, 92))
     c.outline()
 
     return Image.alpha_composite(under.im, c.im)
@@ -775,7 +927,9 @@ def prop_stain():
 # Two kinds here. The four things in flight are objects, so they are outlined
 # like a pickup and sit in the middle of the cell instead of on the floor. The
 # eight glows are a radial falloff and nothing else: no outline, because a dark
-# line round a fireball is the one way to make it look like a sticker.
+# line round a fireball is the one way to make it look like a sticker. The
+# glows get nothing from a bigger cell beyond a smoother falloff, which they
+# get for free. There is no detail to put in a blur.
 
 
 def fx_knife():
@@ -784,6 +938,11 @@ def fx_knife():
     c.plate(22, 26, 25, 38, STEEL_LO, STEEL_HI, (34, 35, 39))
     c.poly([(25, 28), (56, 32), (25, 36)], STEEL)
     c.poly([(25, 28), (56, 32), (27, 33)], (196, 200, 208))
+    c.poly([(27, 31.5), (48, 32.5), (27, 33.5)], STEEL_LO)
+
+    for x in (8, 17):
+        c.box(x, 31, x + 1, 33, (142, 146, 154))
+
     c.outline()
 
     return c.im
@@ -795,6 +954,9 @@ def fx_rocket():
     c.poly([(42, 27), (42, 37), (54, 32)], WARHEAD)
     c.poly([(42, 27), (42, 32), (54, 32)], WARHEAD_HI)
     c.poly([(24, 27), (18, 23), (18, 41), (24, 37)], IRON)
+    c.row(24, 42, 29 * S, lighten(OLIVE, 1.55))
+    c.box(30, 27, 31, 37, OLIVE_LO)
+    c.box(36, 30, 40, 31, (206, 198, 150))
     c.outline()
 
     flame = Cell()
@@ -820,7 +982,13 @@ def fx_flash():
     c.box(25, 28, 39, 33, WHITE)
     c.box(25, 28, 39, 28, (244, 244, 238))
     c.box(25, 35, 39, 36, (198, 166, 44))
+
+    # ribs down the can, the same ones the pair on the floor have
+    for i in range(4):
+        c.box(25, 38 + i * 3, 39, 38 + i * 3, (62, 63, 70))
+
     c.plate(28, 16, 36, 20, IRON, STEEL_HI)
+    c.box(31, 13, 33, 16, STEEL_LO)
     c.outline()
 
     return c.im
