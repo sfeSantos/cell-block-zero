@@ -30,8 +30,11 @@ about two thirds of the width looks right next to the rest.
 | `fx.<name>.png` | effects: `knife`, `rocket`, `grenade`, `flash`, `boom1` to `boom4`, `pop`, `blood`, `spark`, `smoke` |
 
 Guard and prisoner frames: `idle`, `walk1` to `walk4`, `aim`, `fire`, `pain`,
-`die1`, `die2`, `die3`, `dead`, `sleep`. The dog has `walk1`, `walk2`, `bite`,
-`pain`, `dead`, and the rest of its frames point at those.
+`die1`, `die2`, `die3`, `dead`, `sleep`. The dog answers to the same names, but
+only `walk1`, `walk2`, `bite`, `pain` and `dead` are drawn in code. The rest
+borrow one of those five, the file you dropped in for it included, so the dog
+looks the same whether you supply them or not. Put in `dg.idle.png` and that
+frame becomes a picture of its own; the frame it was borrowing is left alone.
 
 `prop.stain` is the one that does not stand up. It is painted flat into the
 ground, so its cell is a square of floor seen from above: fill the whole of

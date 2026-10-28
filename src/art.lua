@@ -18,7 +18,6 @@ local CELL = 128
 local GRID = 64
 local SCALE = CELL / GRID
 local COLS = 10
-local ROWS = 10
 
 local cells = {}
 local quads = {}
@@ -765,7 +764,9 @@ end
 
 art.DOG_FRAMES = {"walk1", "walk2", "bite", "pain", "dead"}
 
--- Everything the animation code can ask for, pointed at the five it has.
+-- Everything the animation code can ask for, pointed at the five it has. Each
+-- of these gets a cell of its own on the sheet, drawn with the frame it names,
+-- so it can be replaced on its own from assets/sprites.
 art.DOG_ALIAS = {
     idle = "walk1",
     walk3 = "walk1",
@@ -1535,6 +1536,83 @@ local function paintOver(image, x, y, w, h)
     lg.setScissor()
 end
 
+local EXTRAS = {
+    ["fx.knife"] = flyingKnife,
+    ["fx.rocket"] = flyingRocket,
+    ["fx.grenade"] = thrownGrenade,
+    ["fx.flash"] = thrownFlash,
+    ["fx.boom1"] = function() fireball(0) end,
+    ["fx.boom2"] = function() fireball(0.33) end,
+    ["fx.boom3"] = function() fireball(0.66) end,
+    ["fx.boom4"] = function() fireball(1) end,
+    ["fx.pop"] = flashPop,
+    ["fx.blood"] = function() blob({0.52, 0.06, 0.07, 0.95}) end,
+    ["fx.spark"] = function() blob({0.95, 0.80, 0.35, 0.95}) end,
+    ["fx.smoke"] = function() blob({0.45, 0.44, 0.44, 0.55}) end,
+}
+
+local EXTRA_ORDER = {"fx.knife", "fx.rocket", "fx.grenade", "fx.flash", "fx.boom1", "fx.boom2",
+    "fx.boom3", "fx.boom4", "fx.pop", "fx.blood", "fx.spark", "fx.smoke"}
+
+-- Every cell the sheet carries, in the order it is laid down, each with the
+-- drawing that fills it. The list comes before the canvas so the sheet can be
+-- made as tall as the cells need instead of a fixed ten rows, which was two
+-- cells off being full.
+local function spriteCells()
+    local list = {}
+
+    local function cell(name, draw)
+        list[#list + 1] = {name = name, draw = draw}
+    end
+
+    for _, t in ipairs(art.TIERS) do
+        for _, frame in ipairs(art.FRAMES) do
+            cell(t.key .. "." .. frame, function() guardFrame(t, frame) end)
+        end
+    end
+
+    for _, name in ipairs(art.ITEM_ORDER) do
+        cell("item." .. name, items[name])
+    end
+
+    for _, name in ipairs(art.PROP_ORDER) do
+        cell("prop." .. name, props[name])
+    end
+
+    cell("prop.deadguard", deadGuard)
+
+    for _, frame in ipairs(art.DOG_FRAMES) do
+        cell("dg." .. frame, function() dogFrame(frame) end)
+    end
+
+    -- An alias has a cell of its own, drawn with the frame it points at.
+    -- Handing it the real frame's cell would save the room, but then a file
+    -- named after the alias would land on the real frame and repaint it.
+    -- Sorted, so two loads lay the sheet out the same way.
+    local aliases = {}
+
+    for alias in pairs(art.DOG_ALIAS) do
+        aliases[#aliases + 1] = alias
+    end
+
+    table.sort(aliases)
+
+    for _, alias in ipairs(aliases) do
+        local real = art.DOG_ALIAS[alias]
+        cell("dg." .. alias, function() dogFrame(real) end)
+    end
+
+    for _, frame in ipairs(art.CON_FRAMES) do
+        cell("con." .. frame, function() conFigure(frame) end)
+    end
+
+    for _, name in ipairs(EXTRA_ORDER) do
+        cell(name, EXTRAS[name])
+    end
+
+    return list
+end
+
 function art.load()
     lg = love.graphics
     art.loaded = {sprites = 0, views = 0, walls = 0}
@@ -1545,7 +1623,13 @@ function art.load()
     quads = {}
     used = 0
 
-    local sheet = lg.newCanvas(COLS * CELL, ROWS * CELL)
+    local list = spriteCells()
+
+    for _, c in ipairs(list) do
+        reserve(c.name)
+    end
+
+    local sheet = lg.newCanvas(COLS * CELL, math.ceil(#list / COLS) * CELL)
     sheet:setFilter("nearest", "nearest")
 
     lg.push("all")
@@ -1553,86 +1637,30 @@ function art.load()
     lg.clear(0, 0, 0, 0)
     lg.setBlendMode("alpha")
 
-    for _, t in ipairs(art.TIERS) do
-        for _, frame in ipairs(art.FRAMES) do
-            local name = t.key .. "." .. frame
-            reserve(name)
-            push(name)
-            guardFrame(t, frame)
-            pop()
-        end
-    end
-
-    for _, name in ipairs(art.ITEM_ORDER) do
-        reserve("item." .. name)
-        push("item." .. name)
-        items[name]()
+    for _, c in ipairs(list) do
+        push(c.name)
+        c.draw()
         pop()
     end
 
-    for _, name in ipairs(art.PROP_ORDER) do
-        reserve("prop." .. name)
-        push("prop." .. name)
-        props[name]()
-        pop()
-    end
-
-    reserve("prop.deadguard")
-    push("prop.deadguard")
-    deadGuard()
-    pop()
-
-    for _, frame in ipairs(art.DOG_FRAMES) do
-        local name = "dg." .. frame
-        reserve(name)
-        push(name)
-        dogFrame(frame)
-        pop()
-    end
-
-    for alias, real in pairs(art.DOG_ALIAS) do
-        cells["dg." .. alias] = cells["dg." .. real]
-    end
-
-    for _, frame in ipairs(art.CON_FRAMES) do
-        local name = "con." .. frame
-        reserve(name)
-        push(name)
-        conFigure(frame)
-        pop()
-    end
-
-    local extras = {
-        ["fx.knife"] = flyingKnife,
-        ["fx.rocket"] = flyingRocket,
-        ["fx.grenade"] = thrownGrenade,
-        ["fx.flash"] = thrownFlash,
-        ["fx.boom1"] = function() fireball(0) end,
-        ["fx.boom2"] = function() fireball(0.33) end,
-        ["fx.boom3"] = function() fireball(0.66) end,
-        ["fx.boom4"] = function() fireball(1) end,
-        ["fx.pop"] = flashPop,
-        ["fx.blood"] = function() blob({0.52, 0.06, 0.07, 0.95}) end,
-        ["fx.spark"] = function() blob({0.95, 0.80, 0.35, 0.95}) end,
-        ["fx.smoke"] = function() blob({0.45, 0.44, 0.44, 0.55}) end,
-    }
-
-    local order = {"fx.knife", "fx.rocket", "fx.grenade", "fx.flash", "fx.boom1", "fx.boom2",
-        "fx.boom3", "fx.boom4", "fx.pop", "fx.blood", "fx.spark", "fx.smoke"}
-    for _, name in ipairs(order) do
-        reserve(name)
-        push(name)
-        extras[name]()
-        pop()
-    end
-
-    -- the player's own sprites, over the top of ours, while the sheet is
-    -- still the canvas being drawn to
+    -- The player's own sprites, over the top of ours, while the sheet is still
+    -- the canvas being drawn to. An alias takes the file named after itself
+    -- when there is one, and the file of the frame it points at when there is
+    -- not, so it goes on looking like that frame either way. Only a file read
+    -- for its own cell counts towards the total, so the startup line stays a
+    -- count of files and not of cells painted.
     for name, c in pairs(cells) do
         local image = readImage(art.SPRITE_DIR .. "/" .. name .. ".png")
+
+        if image then
+            art.loaded.sprites = art.loaded.sprites + 1
+        else
+            local real = art.DOG_ALIAS[name:match("^dg%.(.+)$") or ""]
+            image = real and readImage(art.SPRITE_DIR .. "/dg." .. real .. ".png")
+        end
+
         if image then
             paintOver(image, c.x, c.y, CELL, CELL)
-            art.loaded.sprites = art.loaded.sprites + 1
         end
     end
 
