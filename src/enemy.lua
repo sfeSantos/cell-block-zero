@@ -214,6 +214,7 @@ function Enemy.new(tier, x, y, scale)
     self.reloadT = 0
     self.looted = nil
     self.supplyX, self.supplyY = nil, nil
+    self.alarmX, self.alarmY = nil, nil
 
     if t.mag then
         self.spares = love.math.random() < t.dry and 0
@@ -594,7 +595,15 @@ function Enemy:think(dt, world)
         end
     elseif self.state == "alert" then
         if self.stateT <= 0 then
-            self.state = "fight"
+            -- An ordinary guard with the panel nearer than you are runs for
+            -- it instead of drawing. A sergeant or a riot captain does not:
+            -- he has no reason to leave a fight he expects to win. The choice
+            -- is made here, once, as his reaction time runs out, so he cannot
+            -- change his mind halfway across the room.
+            local runner = self.tier == 1 and not self:isDog()
+            if not (runner and self:seekAlarm(world)) then
+                self.state = "fight"
+            end
         end
     elseif self.state == "fight" then
         if self.lostT > 0.7 then
@@ -648,6 +657,25 @@ function Enemy:think(dt, world)
             end
         elseif self.stateT <= 0 then
             self:seekSupply(world)
+        end
+    elseif self.state == "alarm" then
+        local panel = self.alarmX and world.level:alarmAt(self.alarmX, self.alarmY)
+        local dx, dy = self.wx - self.x, self.wy - self.y
+
+        if not panel or panel.used then
+            -- somebody else got to it first, so there is nothing left to do
+            -- here but the thing he was going to do anyway
+            self:dropAlarm(world)
+            self.state = "fight"
+        elseif dx * dx + dy * dy < 0.4 then
+            world:raiseLockdown(panel, self)
+            self:dropAlarm(world)
+            self.state = self.seeing and "fight" or "hunt"
+            self.stateT = t.giveUp
+        elseif self.stateT <= 0 then
+            -- he has been walking too long: whatever he saw has moved
+            self:dropAlarm(world)
+            self.state = "fight"
         end
     elseif self.state == "spent" then
         if self.stateT <= 0 then
@@ -874,6 +902,15 @@ function Enemy:desire(dt, world)
         return dx, dy, 1
     end
 
+    if self.state == "alarm" then
+        -- running, and running out of his own area if that is where the panel
+        -- is. holdArea is only consulted below, by hunting and by fighting,
+        -- so a runner is not held back by it, which is the point of him.
+        local dx, dy = self:navTowards(world, self.wx, self.wy)
+
+        return dx, dy, 1.15
+    end
+
     if self.state == "spent" then
         -- nothing to shoot with: away from him, and back towards his own
         -- patch once there is room between them
@@ -1042,6 +1079,49 @@ function Enemy:act(dt, world)
     self.angle = self.angle + off
 
     self:gunplay(dt, world, math.abs(wrap(want - self.angle)))
+end
+
+-- How long he will keep walking to a panel before he decides whatever he saw
+-- has moved and goes back to doing his job.
+Enemy.ALARM_T = 12
+
+-- Whatever panel he was walking to is somebody else's again.
+function Enemy:dropAlarm(world)
+    if not self.alarmX then
+        return
+    end
+
+    local panel = world.level:alarmAt(self.alarmX, self.alarmY)
+    if panel and panel.claimedBy == self then
+        panel.claimedBy = nil
+    end
+
+    self.alarmX, self.alarmY = nil, nil
+end
+
+-- The alarm panel, if there is one worth running to. Built the same way as
+-- seekSupply: he lets go of anything he had claimed, asks the world for the
+-- nearest panel he can reach, and walks to the tile in front of it. If there
+-- is none he has lost nothing, because the caller then does what he was
+-- going to do anyway.
+function Enemy:seekAlarm(world)
+    self:dropAlarm(world)
+
+    local panel, ax, ay = world:alarmFor(self)
+    if not panel then
+        return false
+    end
+
+    panel.claimedBy = self
+    self.alarmX, self.alarmY = panel.x, panel.y
+    self.wx, self.wy = ax, ay
+    self.state = "alarm"
+    self.stateT = Enemy.ALARM_T
+    self.pauseT = 0
+    self.path = nil
+    self.pathTo = nil
+
+    return true
 end
 
 -- Somewhere with rounds in it, and nobody else already walking to it. If
@@ -1370,6 +1450,9 @@ function Enemy:die(world, silent)
 
         self.raided = nil
     end
+
+    -- he went down on his way to the panel, so it is anybody's again
+    self:dropAlarm(world)
 
     -- most of them are carrying nothing worth picking up
     local roll = love.math.random()

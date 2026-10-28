@@ -63,13 +63,15 @@ local ENEMY_KEYS = {"x", "y", "angle", "hp", "alive", "state", "frame",
     -- what is in his gun, what is in his pockets, and the locker he is
     -- walking to or has already turned out
     "mag", "spares", "reloadT", "looted", "supplyX", "supplyY", "raided",
-    "gaveUp", "wx", "wy"}
+    "gaveUp", "wx", "wy",
+    -- and the alarm panel he is running for
+    "alarmX", "alarmY"}
 
 local ALLY_KEYS = {"x", "y", "angle", "hp", "alive", "freed", "state",
     "frame", "kills"}
 
 local COUNTERS = {"time", "killed", "total", "taken", "totalItems", "freed",
-    "totalAllies", "alarms", "alarmT"}
+    "totalAllies", "alarms", "alarmT", "lockdown"}
 
 -- Everything worth writing down about the block as it is this second.
 function save.snapshot(world, path, difficulty, elapsed)
@@ -94,6 +96,7 @@ function save.snapshot(world, path, difficulty, elapsed)
         doors = {},
         lockers = {},
         secrets = {},
+        panels = {},
     }
 
     data.player.ammo = copy(p.ammo, {"bullets", "clips", "rockets", "grenades",
@@ -160,6 +163,10 @@ function save.snapshot(world, path, difficulty, elapsed)
 
     for i, panel in ipairs(level.secrets) do
         data.secrets[i] = panel.opened and true or false
+    end
+
+    for i, panel in ipairs(level.alarms) do
+        data.panels[i] = panel.used and true or false
     end
 
     return data
@@ -285,6 +292,17 @@ function save.restore(data, audio)
             end
         end
 
+        if e.alive and e.state == "alarm" and e.alarmX then
+            local panel = level:alarmAt(e.alarmX, e.alarmY)
+            if panel then
+                panel.claimedBy = e
+                -- stateT is not in the file, so without this he reads as a
+                -- runner who has already used up his walk and gives up on
+                -- the first frame after the load
+                e.stateT = Enemy.ALARM_T
+            end
+        end
+
         world.enemies[#world.enemies + 1] = e
     end
 
@@ -346,6 +364,15 @@ function save.restore(data, audio)
     for i, panel in ipairs(level.secrets) do
         if data.secrets and data.secrets[i] and not panel.opened then
             level:revealSecret(panel)
+        end
+    end
+
+    -- A save written before alarm panels existed has no panels array, and
+    -- every panel in it was in fact untouched, so the default is right and
+    -- save.VERSION does not have to move.
+    for i, panel in ipairs(level.alarms) do
+        if (data.panels or {})[i] then
+            level:useAlarm(panel)
         end
     end
 

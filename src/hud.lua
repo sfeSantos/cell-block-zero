@@ -352,9 +352,17 @@ function hud.draw(world, w, h, horizon)
     drawCrosshair(world, w, h, horizon or (h - barH) * 0.5)
 
     if world.alarmT > 0 then
+        -- the klaxon and the lockdown are not the same event and should not
+        -- look like it: being seen flashes red, a pulled panel burns white
+        local pulse = math.abs(math.sin(love.timer.getTime() * (world.lockdown and 9 or 6)))
         love.graphics.setFont(fonts.text)
-        setColor(0.9, 0.25, 0.2, 0.35 + math.abs(math.sin(love.timer.getTime() * 6)) * 0.5)
-        love.graphics.printf("ALARM", 0, 18, w, "center")
+        if world.lockdown then
+            setColor(1, 0.86, 0.72, 0.5 + pulse * 0.5)
+            love.graphics.printf("LOCKDOWN", 0, 18, w, "center")
+        else
+            setColor(0.9, 0.25, 0.2, 0.35 + pulse * 0.5)
+            love.graphics.printf("ALARM", 0, 18, w, "center")
+        end
     end
 
     local target = world:takedownTarget()
@@ -768,6 +776,14 @@ function hud.drawReport(r, w, h, last)
 
     rows[#rows + 1] = {"Alarm", r.alarms == 0 and "never went off"
         or countOf(r.alarms, "time", "times")}
+
+    if r.alarmPanels and r.alarmPanels.total > 0 then
+        rows[#rows + 1] = {"Alarm panels", r.alarmPanels.pulled == 0
+            and "nobody reached one"
+            or string.format("%d of %d pulled", r.alarmPanels.pulled,
+                r.alarmPanels.total)}
+    end
+
     rows[#rows + 1] = {"Walked out with",
         string.format("%d health and %d vest", r.health, r.vest)}
 
