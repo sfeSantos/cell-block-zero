@@ -751,17 +751,20 @@ def prop_stain():
     # Dried blood with nobody left beside it. It cannot live in the floor
     # texture: one file is painted on every tile of its kind, so a stain in
     # there would run the length of the corridor.
+    #
+    # This one is painted into the ground rather than stood up in it, so it
+    # fills its cell instead of sitting along the bottom edge like a billboard.
     c = Cell()
-    pool(c, 30, 52, 18, 10, 120)
-    pool(c, 42, 56, 11, 6, 100)
-    pool(c, 20, 57, 9, 5, 100)
-    pool(c, 31, 53, 11, 6, 150)
-    pool(c, 39, 58, 6, 3, 140)
-    pool(c, 24, 59, 5, 3, 140)
+    pool(c, 31, 31, 24, 20, 120)
+    pool(c, 45, 40, 14, 12, 100)
+    pool(c, 18, 41, 12, 10, 100)
+    pool(c, 32, 33, 15, 13, 150)
+    pool(c, 41, 44, 8, 7, 140)
+    pool(c, 23, 45, 7, 6, 140)
 
     # the spots that flew out of it and dried on their own
-    for x, y, r in ((9, 50, 3), (53, 52, 3), (46, 46, 2), (14, 60, 3),
-                    (57, 59, 2), (36, 44, 2)):
+    for x, y, r in ((8, 24, 3), (56, 28, 3), (50, 14, 2), (13, 54, 3),
+                    (58, 50, 2), (37, 10, 2)):
         pool(c, x, y, r, max(1, r - 1), 110)
 
     return c.im
