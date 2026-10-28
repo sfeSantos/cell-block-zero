@@ -39,6 +39,8 @@ GUN_LO = (38, 38, 43)
 WOOD = (82, 54, 33)
 WOOD_HI = (117, 79, 47)
 BLOOD = (148, 13, 15)
+BRASS = (184, 148, 56)
+BRASS_HI = (226, 196, 104)
 
 # Dried, not fresh. The guard who came into the cell is an hour behind you
 # and it is still on your hands.
@@ -46,7 +48,7 @@ DRIED = (112, 26, 24, 205)
 DRIED_LO = (78, 17, 16, 190)
 EDGE = (16, 15, 18, 255)
 
-FRAMES = {"hatchet": 2, "revolver": 4, "uzi": 4, "launcher": 2,
+FRAMES = {"hatchet": 2, "revolver": 10, "uzi": 10, "launcher": 2,
           "grenades": 2, "flashes": 2, "knife": 2,
           "throat": 4, "head": 4, "neck": 4}
 
@@ -163,6 +165,28 @@ def fists(v, spread=0):
     v.rect(hx + 2, cy + 16, 6, 2, DRIED_LO)
 
 
+def off_hand(v, x, y, rot=0.0, s=1.0):
+    """The left hand, the one the comment above says is busy with doors and
+    lockers and the man on the floor. It only comes up for a reload, so it is
+    drawn on its own: the back of it towards us and the fingers closed round
+    whatever it has hold of."""
+    keep = (v.ox, v.oy, v.s, v.rot)
+    px, py = v.p(x, y)
+    v.at(px, py, v.s * s, v.rot + rot)
+
+    v.rect(-16, -12, 32, 30, SKIN)
+    v.rect(-16, -12, 32, 3, SKIN_HI)
+    v.disc(0, 16, 16, SKIN)
+
+    for i in range(4):
+        finger(v, -20, -14 + i * 9, 22, 8, SKIN, SKIN_LO)
+
+    v.poly(((16, -10), (24, -4), (24, 8), (14, 10)), SKIN_HI)
+    v.rect(-16, 22, 32, 14, CUFF)
+    v.rect(-16, 22, 32, 3, CUFF_HI)
+    v.at(*keep)
+
+
 def flash(v, x, y, s=1.0, quiet=False):
     if quiet:
         v.disc(x, y, 7 * s, (255, 234, 158, 115))
@@ -200,11 +224,10 @@ def w_hatchet(v, frame):
     fists(v, 2)
 
 
-def w_revolver(v, frame):
-    fire = frame in (2, 4)
-    sil = frame >= 3
-    v.grip(-5 if fire else 0)
-
+def revolver_body(v, sil, hollow):
+    """One body for every frame of the gun, so the cylinder cannot drift
+    between the one you fire and the one you reload. `hollow` is the frame it
+    has swung out of."""
     v.poly(((-15, -2), (15, -2), (11, -42), (-9, -42)), WOOD)
     v.poly(((-15, -2), (-7, -2), (-5, -42), (-9, -42)), WOOD_HI)
     v.rect(-17, -60, 34, 20, GUN)
@@ -213,8 +236,13 @@ def w_revolver(v, frame):
     v.disc(-3, -43, 8, GUN_LO)
     v.rect(-14, -80, 28, 22, (79, 82, 90))
     v.rect(-14, -80, 28, 2, GUN_HI)
-    v.disc(0, -69, 9, (56, 56, 64))
-    v.disc(0, -69, 3, (18, 18, 20))
+
+    if hollow:
+        v.rect(-11, -78, 22, 18, (18, 18, 20))
+    else:
+        v.disc(0, -69, 9, (56, 56, 64))
+        v.disc(0, -69, 3, (18, 18, 20))
+
     v.tube(0, -122, 14, -78, 20, GUN)
     v.tube(-5, -120, 3, -78, 4, GUN_HI)
     v.tube(6, -120, 3, -78, 4, GUN_LO)
@@ -226,6 +254,76 @@ def w_revolver(v, frame):
         for i in range(4):
             v.rect(-11, -124 + i * 10, 22, 3, (23, 23, 28))
 
+
+def revolver_cylinder(v, x, y, loaded):
+    """The cylinder out on its crane, chambers towards us. `loaded` is how
+    many of the six have a round in them."""
+    keep = (v.ox, v.oy, v.s, v.rot)
+    px, py = v.p(x, y)
+    v.at(px, py, v.s, v.rot)
+
+    v.rect(6, -3, 16, 6, GUN_LO)
+    v.disc(0, 0, 13, (96, 99, 106))
+    v.disc(0, 0, 11, (76, 79, 86))
+
+    for i in range(6):
+        a = i / 6 * math.pi * 2
+        v.disc(math.cos(a) * 7, math.sin(a) * 7, 3.4,
+               BRASS if i < loaded else (15, 15, 18))
+
+    v.disc(0, 0, 2.5, GUN_HI)
+    v.at(*keep)
+
+
+def speedloader(v, x, y):
+    """Six rounds in a ring, which is the only way anybody reloads one of
+    these with a man coming down the corridor."""
+    keep = (v.ox, v.oy, v.s, v.rot)
+    px, py = v.p(x, y)
+    v.at(px, py, v.s, v.rot)
+
+    v.disc(0, 0, 12, (61, 61, 66))
+
+    for i in range(6):
+        a = i / 6 * math.pi * 2
+        v.disc(math.cos(a) * 7, math.sin(a) * 7, 3.4, BRASS)
+        v.disc(math.cos(a) * 7, math.sin(a) * 7 - 1, 1.6, BRASS_HI)
+
+    v.disc(0, 0, 3, (102, 107, 117))
+    v.at(*keep)
+
+
+def r_reload(v, step, sil):
+    """The three frames of a reload: the cylinder out with the empties still
+    in it, the loader pushed up into it, and the gun rolling back upright."""
+    roll = (0.40, 0.44, 0.16)[step]
+    v.at(OX, OY + (4, 8, 1)[step], SC, roll)
+
+    if step == 1:
+        speedloader(v, -28, -54)
+
+    revolver_body(v, sil, step < 2)
+
+    if step == 0:
+        revolver_cylinder(v, -28, -66, 0)
+        speedloader(v, -48, -34)
+        off_hand(v, -52, -6, -0.2, 0.8)
+    elif step == 1:
+        revolver_cylinder(v, -28, -66, 6)
+        off_hand(v, -46, -22, -0.25, 0.8)
+
+    fists(v, 0)
+    v.outline()
+
+
+def w_revolver(v, frame):
+    if frame >= 5:
+        return r_reload(v, (frame - 5) % 3, frame >= 8)
+
+    fire = frame in (2, 4)
+    sil = frame >= 3
+    v.grip(-5 if fire else 0)
+    revolver_body(v, sil, False)
     fists(v, 0)
     v.outline()
 
@@ -233,12 +331,16 @@ def w_revolver(v, frame):
         flash(v, 0, -134 if sil else -126, 1.0, sil)
 
 
-def w_uzi(v, frame):
-    fire = frame in (2, 4)
-    sil = frame >= 3
-    v.grip(-4 if fire else 0)
+def uzi_body(v, sil, mag):
+    """The magazine goes through the grip on one of these, so `mag` is the
+    difference between a gun you can fire and one you cannot."""
+    v.poly(((-26, -2), (-4, -7), (0, -46), (-22, -42)), (33, 33, 38))
 
-    v.poly(((-24, -4), (-6, -8), (-2, -46), (-20, -42)), (48, 48, 54))
+    if mag:
+        v.poly(((-24, -4), (-6, -8), (-2, -46), (-20, -42)), (48, 48, 54))
+    else:
+        v.poly(((-23, -8), (-7, -12), (-4, -44), (-20, -40)), (13, 13, 15))
+
     v.rect(-18, -74, 36, 30, (59, 59, 66))
     v.rect(-18, -74, 36, 3, GUN_HI)
     v.rect(-18, -56, 36, 2, GUN_LO)
@@ -254,6 +356,52 @@ def w_uzi(v, frame):
         for i in range(4):
             v.rect(-11, -122 + i * 11, 22, 3, (23, 23, 28))
 
+
+def uzi_mag(v, x, y, rot=0.0):
+    """A magazine on its own, top end at the origin, for the one coming out
+    and the one going in."""
+    keep = (v.ox, v.oy, v.s, v.rot)
+    px, py = v.p(x, y)
+    v.at(px, py, v.s, v.rot + rot)
+
+    v.poly(((-9, 0), (9, 0), (11, 42), (-7, 42)), (48, 48, 54))
+    v.poly(((-9, 0), (-3, 0), (-5, 42), (-7, 42)), (69, 69, 77))
+    v.rect(-8, 1, 16, 4, BRASS)
+    v.rect(-8, 1, 16, 1, BRASS_HI)
+    v.at(*keep)
+
+
+def u_reload(v, step, sil):
+    """Out, in, and the bolt back: the same three steps the revolver gets, on
+    the uzi's own 1.55 seconds."""
+    v.grip((5, 9, 2)[step])
+
+    if step == 2:
+        uzi_body(v, sil, True)
+        v.rect(-14, -80, 18, 6, GUN_HI)
+        off_hand(v, -24, -62, -0.3, 0.7)
+    else:
+        uzi_body(v, sil, False)
+
+        if step == 0:
+            uzi_mag(v, -46, -12, 0.8)
+            off_hand(v, -34, -36, 0.1, 0.72)
+        else:
+            uzi_mag(v, -40, -22, 0.18)
+            off_hand(v, -46, 12, 0.14, 0.8)
+
+    fists(v, 4)
+    v.outline()
+
+
+def w_uzi(v, frame):
+    if frame >= 5:
+        return u_reload(v, (frame - 5) % 3, frame >= 8)
+
+    fire = frame in (2, 4)
+    sil = frame >= 3
+    v.grip(-4 if fire else 0)
+    uzi_body(v, sil, True)
     fists(v, 4)
     v.outline()
 

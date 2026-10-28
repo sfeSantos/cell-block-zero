@@ -34,10 +34,17 @@ Guard and prisoner frames: `idle`, `walk1` to `walk4`, `aim`, `fire`, `pain`,
 ## assets/views
 
 The weapon in your hands, `<weapon>.<frame>.png`, drawn at 200 by 150 with the
-grip at the bottom of the cell. Weapons: `hatchet` and `launcher`, `grenades`,
-`flashes`, `knife` have two frames, `revolver` and `uzi` have four (the third
-and fourth are with the silencer on), and `throat`, `head`, `neck` are the four
-frames of each execution.
+grip at the bottom of the cell. `hatchet`, `launcher`, `grenades`, `flashes`
+and `knife` have two frames, `throat`, `head` and `neck` are the four frames of
+an execution, and `revolver` and `uzi` have ten:
+
+| 1 | 2 | 3 | 4 | 5 6 7 | 8 9 10 |
+| --- | --- | --- | --- | --- | --- |
+| in your hands | firing | with the silencer | firing, silenced | the reload | the reload, silenced |
+
+The three of a reload are the magazine coming out, the new one going in, and
+the gun coming back up. Which one is on screen comes off the weapon's own
+reload time, so a file dropped in here is shown for a third of it.
 
 These are the one place the game draws the same thing twice. The files here
 are written by `tools/weapons.py`, and `src/art.lua` draws the same frames in

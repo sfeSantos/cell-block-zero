@@ -101,10 +101,18 @@ local function drawWeaponView(world, w, h, barH)
         frame = 2
     else
         local def = player:weaponDef()
+        local quiet = player:silencedNow()
+        local stage = player:reloadStage()
+        local reload = art.RELOAD_VIEW[def.view]
         name = def.view
-        frame = (player:silencedNow() and def.silencer) and 3 or 1
-        if player.fireT > 0 then
-            frame = frame + 1
+
+        if stage and reload then
+            frame = (quiet and reload.quiet or reload.plain) + stage
+        else
+            frame = quiet and 3 or 1
+            if player.fireT > 0 then
+                frame = frame + 1
+            end
         end
     end
 
@@ -120,14 +128,17 @@ local function drawWeaponView(world, w, h, barH)
     local y = h - barH * 0.35 - art.VIEW_H * scale + rise - player.kick * 1.1
 
     -- out of the line of sight while the magazine is changed: down and in
-    -- towards the body, and a tilt that puts the other hand on it
+    -- towards the body, and a tilt that puts the other hand on it. A weapon
+    -- with frames of its own only ducks a little, or the magazine coming out
+    -- would happen below the edge of the screen.
     local dip = player:reloadDip()
     local tilt = 0
 
     if dip > 0 then
-        y = y + art.VIEW_H * scale * 0.52 * dip
-        x = x + 26 * dip
-        tilt = -0.30 * dip
+        local own = art.RELOAD_VIEW[name] ~= nil
+        y = y + art.VIEW_H * scale * (own and 0.18 or 0.52) * dip
+        x = x + (own and 10 or 26) * dip
+        tilt = (own and -0.12 or -0.30) * dip
     end
 
     setColor(1, 1, 1, 1)

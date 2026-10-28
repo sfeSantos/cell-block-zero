@@ -897,7 +897,7 @@ end
 -- an empty assets folder, which is the one thing the fallback is for.
 art.VIEW_W = 200
 art.VIEW_H = 150
-art.VIEW_COLS = 4
+art.VIEW_COLS = 10
 
 local views = {}
 
@@ -966,6 +966,31 @@ local function fists(spread)
     rect(hx - 8, cy + 14, 32, 3, {0.62, 0.64, 0.68})
 end
 
+-- The left hand, the one the comment above says is busy with doors and
+-- lockers and the man on the floor. It only comes up for a reload, so it is
+-- drawn on its own: the back of it towards us and the fingers closed round
+-- whatever it has hold of.
+local function offHand(x, y, rot, s)
+    lg.push()
+    lg.translate(x, y)
+    lg.rotate(rot or 0)
+    lg.scale(s or 1, s or 1)
+
+    rect(-16, -12, 32, 30, SKIN)
+    rect(-16, -12, 32, 3, SKIN_HI)
+    disc(0, 16, 16, SKIN)
+
+    for i = 0, 3 do
+        finger(-20, -14 + i * 9, 22, 8, SKIN, SKIN_LO)
+    end
+
+    poly(SKIN_HI, 16, -10, 24, -4, 24, 8, 14, 10)
+    rect(-16, 22, 32, 14, CUFF)
+    rect(-16, 22, 32, 3, {0.62, 0.64, 0.68})
+
+    lg.pop()
+end
+
 local function muzzleFlash(x, y, s, quiet)
     if quiet then
         disc(x, y, 7 * s, {1, 0.92, 0.62, 0.45})
@@ -1004,31 +1029,114 @@ function views.hatchet(frame)
     end)
 end
 
+-- One body for every frame of the gun, so the cylinder cannot drift between
+-- the one you fire and the one you reload. `hollow` is the frame it has swung
+-- out of.
+local function revolverBody(sil, hollow)
+    poly(WOOD, -15, -2, 15, -2, 11, -42, -9, -42)
+    poly({0.40, 0.27, 0.17}, -15, -2, -7, -2, -5, -42, -9, -42)
+    rect(-17, -60, 34, 20, GUN)
+    rect(-17, -60, 34, 3, GUN_HI)
+    disc(-3, -43, 8, GUN_LO)
+    rect(-14, -80, 28, 22, {0.31, 0.32, 0.35})
+    rect(-14, -80, 28, 2, GUN_HI)
+
+    if hollow then
+        rect(-11, -78, 22, 18, {0.07, 0.07, 0.08})
+    else
+        disc(0, -69, 9, {0.22, 0.22, 0.25})
+        disc(0, -69, 3, {0.07, 0.07, 0.08})
+    end
+
+    tube(0, -122, 14, -78, 20, GUN)
+    tube(-5, -120, 3, -78, 4, GUN_HI)
+    rect(-4, -126, 8, 6, GUN_LO)
+
+    if sil then
+        tube(0, -132, 22, -86, 28, {0.15, 0.16, 0.18})
+        tube(-7, -130, 4, -86, 5, {0.26, 0.27, 0.30})
+        for i = 0, 3 do
+            rect(-11, -124 + i * 10, 22, 3, {0.09, 0.09, 0.11})
+        end
+    end
+end
+
+-- The cylinder out on its crane, chambers towards us. `loaded` is how many of
+-- the six have a round in them.
+local function revolverCylinder(x, y, loaded)
+    lg.push()
+    lg.translate(x, y)
+    rect(6, -3, 16, 6, GUN_LO)
+    disc(0, 0, 13, {0.38, 0.39, 0.42})
+    disc(0, 0, 11, {0.30, 0.31, 0.34})
+
+    for i = 0, 5 do
+        local a = i / 6 * math.pi * 2
+        disc(math.cos(a) * 7, math.sin(a) * 7, 3.4,
+            i < loaded and BRASS or {0.06, 0.06, 0.07})
+    end
+
+    disc(0, 0, 2.5, GUN_HI)
+    lg.pop()
+end
+
+-- Six rounds in a ring, which is the only way anybody reloads one of these
+-- with a man coming down the corridor.
+local function speedloader(x, y)
+    lg.push()
+    lg.translate(x, y)
+    disc(0, 0, 12, {0.24, 0.24, 0.26})
+
+    for i = 0, 5 do
+        local a = i / 6 * math.pi * 2
+        disc(math.cos(a) * 7, math.sin(a) * 7, 3.4, BRASS)
+    end
+
+    disc(0, 0, 3, {0.40, 0.42, 0.46})
+    lg.pop()
+end
+
+-- The three frames of a reload: the cylinder out with the empties still in
+-- it, the loader pushed up into it, and the gun rolling back upright. Which
+-- one is on screen comes off Player:reloadStage, so they follow the weapon's
+-- own reload time instead of a clock of their own.
+local function revolverReload(step, sil)
+    local roll = ({0.40, 0.44, 0.16})[step + 1]
+
+    held(({4, 8, 1})[step + 1], function()
+        lg.push()
+        lg.rotate(roll)
+
+        if step == 1 then
+            speedloader(-28, -54)
+        end
+
+        revolverBody(sil, step < 2)
+
+        if step == 0 then
+            revolverCylinder(-28, -66, 0)
+            speedloader(-48, -34)
+            offHand(-52, -6, -0.2, 0.8)
+        elseif step == 1 then
+            revolverCylinder(-28, -66, 6)
+            offHand(-46, -22, -0.25, 0.8)
+        end
+
+        fists(0)
+        lg.pop()
+    end)
+end
+
 function views.revolver(frame)
+    if frame >= 5 then
+        return revolverReload((frame - 5) % 3, frame >= 8)
+    end
+
     local fire = frame == 2 or frame == 4
     local sil = frame >= 3
 
     held(fire and -5 or 0, function()
-        poly(WOOD, -15, -2, 15, -2, 11, -42, -9, -42)
-        poly({0.40, 0.27, 0.17}, -15, -2, -7, -2, -5, -42, -9, -42)
-        rect(-17, -60, 34, 20, GUN)
-        rect(-17, -60, 34, 3, GUN_HI)
-        disc(-3, -43, 8, GUN_LO)
-        rect(-14, -80, 28, 22, {0.31, 0.32, 0.35})
-        rect(-14, -80, 28, 2, GUN_HI)
-        disc(0, -69, 9, {0.22, 0.22, 0.25})
-        disc(0, -69, 3, {0.07, 0.07, 0.08})
-        tube(0, -122, 14, -78, 20, GUN)
-        tube(-5, -120, 3, -78, 4, GUN_HI)
-        rect(-4, -126, 8, 6, GUN_LO)
-
-        if sil then
-            tube(0, -132, 22, -86, 28, {0.15, 0.16, 0.18})
-            tube(-7, -130, 4, -86, 5, {0.26, 0.27, 0.30})
-            for i = 0, 3 do
-                rect(-11, -124 + i * 10, 22, 3, {0.09, 0.09, 0.11})
-            end
-        end
+        revolverBody(sil, false)
 
         if fire then
             muzzleFlash(0, sil and -134 or -126, 1, sil)
@@ -1038,27 +1146,81 @@ function views.revolver(frame)
     end)
 end
 
+-- The magazine goes through the grip on one of these, so `mag` is the
+-- difference between a gun you can fire and one you cannot.
+local function uziBody(sil, mag)
+    poly({0.13, 0.13, 0.15}, -26, -2, -4, -7, 0, -46, -22, -42)
+
+    if mag then
+        poly({0.19, 0.19, 0.21}, -24, -4, -6, -8, -2, -46, -20, -42)
+    else
+        poly({0.05, 0.05, 0.06}, -23, -8, -7, -12, -4, -44, -20, -40)
+    end
+
+    rect(-18, -74, 36, 30, {0.23, 0.23, 0.26})
+    rect(-18, -74, 36, 3, GUN_HI)
+    rect(-18, -56, 36, 2, GUN_LO)
+    rect(14, -70, 8, 10, {0.17, 0.17, 0.19})
+    disc(-2, -50, 7, GUN_LO)
+    tube(0, -116, 13, -72, 18, GUN)
+    tube(-4, -114, 3, -72, 4, GUN_HI)
+    rect(-5, -120, 10, 5, GUN_LO)
+
+    if sil then
+        tube(0, -130, 22, -80, 26, {0.15, 0.16, 0.18})
+        for i = 0, 3 do
+            rect(-11, -122 + i * 11, 22, 3, {0.09, 0.09, 0.11})
+        end
+    end
+end
+
+-- A magazine on its own, top end at the origin, for the one coming out and
+-- the one going in.
+local function uziMag(x, y, rot)
+    lg.push()
+    lg.translate(x, y)
+    lg.rotate(rot or 0)
+    poly({0.19, 0.19, 0.21}, -9, 0, 9, 0, 11, 42, -7, 42)
+    poly({0.27, 0.27, 0.30}, -9, 0, -3, 0, -5, 42, -7, 42)
+    rect(-8, 1, 16, 4, BRASS)
+    rect(-8, 1, 16, 1, {0.86, 0.72, 0.30})
+    lg.pop()
+end
+
+-- Out, in, and the bolt back: the same three steps the revolver gets, on the
+-- uzi's own 1.55 seconds.
+local function uziReload(step, sil)
+    held(({5, 9, 2})[step + 1], function()
+        if step == 2 then
+            uziBody(sil, true)
+            rect(-14, -80, 18, 6, GUN_HI)
+            offHand(-24, -62, -0.3, 0.7)
+        else
+            uziBody(sil, false)
+
+            if step == 0 then
+                uziMag(-46, -12, 0.8)
+                offHand(-34, -36, 0.1, 0.72)
+            else
+                uziMag(-40, -22, 0.18)
+                offHand(-46, 12, 0.14, 0.8)
+            end
+        end
+
+        fists(4)
+    end)
+end
+
 function views.uzi(frame)
+    if frame >= 5 then
+        return uziReload((frame - 5) % 3, frame >= 8)
+    end
+
     local fire = frame == 2 or frame == 4
     local sil = frame >= 3
 
     held(fire and -4 or 0, function()
-        poly({0.19, 0.19, 0.21}, -24, -4, -6, -8, -2, -46, -20, -42)
-        rect(-18, -74, 36, 30, {0.23, 0.23, 0.26})
-        rect(-18, -74, 36, 3, GUN_HI)
-        rect(-18, -56, 36, 2, GUN_LO)
-        rect(14, -70, 8, 10, {0.17, 0.17, 0.19})
-        disc(-2, -50, 7, GUN_LO)
-        tube(0, -116, 13, -72, 18, GUN)
-        tube(-4, -114, 3, -72, 4, GUN_HI)
-        rect(-5, -120, 10, 5, GUN_LO)
-
-        if sil then
-            tube(0, -130, 22, -80, 26, {0.15, 0.16, 0.18})
-            for i = 0, 3 do
-                rect(-11, -122 + i * 11, 22, 3, {0.09, 0.09, 0.11})
-            end
-        end
+        uziBody(sil, true)
 
         if fire then
             muzzleFlash(0, sil and -132 or -122, 0.9, sil)
@@ -1287,8 +1449,8 @@ art.VIEW_ORDER = {"hatchet", "revolver", "uzi", "launcher", "grenades", "flashes
 -- How many columns of the sheet each row really uses.
 art.VIEW_FRAMES = {
     hatchet = 2,
-    revolver = 4,
-    uzi = 4,
+    revolver = 10,
+    uzi = 10,
     launcher = 2,
     grenades = 2,
     flashes = 2,
@@ -1296,6 +1458,14 @@ art.VIEW_FRAMES = {
     throat = 4,
     head = 4,
     neck = 4,
+}
+
+-- Where the three frames of a reload start on the row: the plain set, and
+-- then the same three with the silencer on. A view with no line here has no
+-- frames of its own and the HUD only dips it out of the way.
+art.RELOAD_VIEW = {
+    revolver = {plain = 5, quiet = 8},
+    uzi = {plain = 5, quiet = 8},
 }
 
 art.TAKEDOWNS = {"throat", "head", "neck"}
