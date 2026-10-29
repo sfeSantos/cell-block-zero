@@ -1246,9 +1246,9 @@ end
 -- A leg trap on the floor. The player never springs his own: he knows where
 -- he put it. Everybody else has to look where they are going.
 World.TRAP_REACH = 0.42
-World.TRAP_DOG = 60
-World.TRAP_GUARD = 45
-World.TRAP_PIN = 2.6        -- seconds a guard spends getting his leg out
+World.TRAP_DOG = 60         -- a dog never sees the jaws and does not get up again
+World.TRAP_SHARE = 0.55     -- of a man's own maximum, which is what keeps him alive
+World.TRAP_PIN = 3          -- seconds he spends getting his leg out
 
 function World:placeTrap(player)
     if (player.ammo.traps or 0) <= 0 then
@@ -1284,7 +1284,17 @@ function World:springTrap(trap, victim)
     self.audio.play("clink", 0.6)
 
     local dog = victim.isDog and victim:isDog()
-    victim:hurt(dog and World.TRAP_DOG or World.TRAP_GUARD, self, trap.x, trap.y)
+    local damage = World.TRAP_DOG
+
+    if not dog then
+        -- A share of his own maximum rather than a flat figure, and never his
+        -- last point. What a trap buys is the three seconds he spends standing
+        -- in it, so killing him with it throws the trap away: a flat 45 put a
+        -- guard's 28 on the floor before the jaws had closed.
+        damage = math.min(victim.maxHp * World.TRAP_SHARE, victim.hp - 1)
+    end
+
+    victim:hurt(damage, self, trap.x, trap.y)
 
     if victim.alive then
         victim.pinT = World.TRAP_PIN
