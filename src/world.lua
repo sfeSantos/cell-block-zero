@@ -1407,18 +1407,29 @@ function World:takedownTarget()
     return best
 end
 
+-- An item is offered when he walks onto it, not on every frame he stands on it.
+-- One he has no room for stays on the floor, and it stays quiet while he is
+-- still standing there: asking again a frame later spends a whole vest to buy
+-- back the four points a round has just taken off the one he is wearing, which
+-- is a vest wasted and a bar that never appears to move. Stepping off it and
+-- back on asks again, which is how you go back for the medkit once you are
+-- actually hurt.
 function World:pickups()
     local p = self.player
     for i = #self.items, 1, -1 do
         local it = self.items[i]
         local dx, dy = it.x - p.x, it.y - p.y
-        if dx * dx + dy * dy < 0.2 then
+        if dx * dx + dy * dy >= 0.2 then
+            it.declined = nil
+        elseif not it.declined then
             local ok, text, kind = p:give(it.item, it.uses)
             if ok then
                 table.remove(self.items, i)
                 self.taken = self.taken + 1
                 self:message(text)
                 self.audio.play(kind == "key" and "key" or "pickup", 0.5)
+            else
+                it.declined = true
             end
         end
     end
