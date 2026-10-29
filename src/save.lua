@@ -60,6 +60,10 @@ local PLAYER_KEYS = {"x", "y", "angle", "pitch", "health", "armor", "weapon",
 
 local ENEMY_KEYS = {"x", "y", "angle", "hp", "alive", "state", "frame",
     "asleep", "awake", "carries", "keyName", "patrol", "dummy",
+    -- how long the state he is in has left to run. Without it a guard
+    -- restored mid hunt reads as one who has already given up, and goes back
+    -- to his round on the first frame after the load.
+    "stateT",
     -- what is in his gun, what is in his pockets, and the locker he is
     -- walking to or has already turned out
     "mag", "spares", "reloadT", "looted", "supplyX", "supplyY", "raided",
@@ -296,10 +300,6 @@ function save.restore(data, audio)
             local panel = level:alarmAt(e.alarmX, e.alarmY)
             if panel then
                 panel.claimedBy = e
-                -- stateT is not in the file, so without this he reads as a
-                -- runner who has already used up his walk and gives up on
-                -- the first frame after the load
-                e.stateT = Enemy.ALARM_T
             end
         end
 
