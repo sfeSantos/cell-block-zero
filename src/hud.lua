@@ -121,11 +121,18 @@ local function drawWeaponView(world, w, h, barH)
     local kind, step = player:takedownFrame()
     local name, frame
 
+    -- whether what is on screen is the weapon in his hands. It is set here,
+    -- beside the choice itself, so the dip below cannot drift out of step
+    -- with which view was actually picked.
+    local gun = true
+
     if kind then
         name, frame = kind, step
+        gun = false
     elseif player.throwT > 0 and player.throwView then
         name = player.throwView
         frame = 2
+        gun = false
     else
         local def = player:weaponDef()
         local quiet = player:silencedNow()
@@ -162,9 +169,10 @@ local function drawWeaponView(world, w, h, barH)
     local tilt = 0
 
     -- and only to the gun. An execution puts the hands round his neck on
-    -- screen instead, and the magazine being changed somewhere off to one
-    -- side is no reason to drop those half a view down it.
-    if kind then
+    -- screen instead, and a thrown grenade has already left them, so the
+    -- magazine being changed somewhere off to one side is no reason to drop
+    -- either of them half a view down it.
+    if not gun then
         dip = 0
     end
 
