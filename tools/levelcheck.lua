@@ -329,8 +329,11 @@ local function check(path)
     end
 
     local c = counts(level)
-    note("guards %d, %d, %d  dogs %d  asleep %d  prisoners %d  ammunition %d  armour %d  food and kit %d",
-        c.t1, c.t2, c.t3, c.dogs, c.asleep, c.prisoners, c.ammo, c.armour, c.medical)
+    -- the total first and then the headings it breaks into, which do not
+    -- cover everything: a weapon or a key is a pickup under none of them
+    note("guards %d, %d, %d  dogs %d  asleep %d  prisoners %d  pickups %d  ammunition %d  armour %d  food and kit %d",
+        c.t1, c.t2, c.t3, c.dogs, c.asleep, c.prisoners, c.items, c.ammo,
+        c.armour, c.medical)
 
     -- the ! tile, so whoever edits a level next finds out it exists
     if #level.alarms > 0 then

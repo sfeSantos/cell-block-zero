@@ -52,6 +52,7 @@ local ITEMS = {
     h = "snack",
     s = "silencer",
     T = "trap",
+    K = "knife",
     R = "redkey",
     B = "bluekey",
     Y = "yellowkey",
