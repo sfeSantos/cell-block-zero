@@ -20,6 +20,11 @@ local MAX = {bullets = 90, clips = 200, rockets = 20, grenades = 9, flashes = 6,
 -- written in that block will ever reach.
 Player.MAX = MAX
 
+-- How much of the vest has to be left for it to stop a whole round, and the
+-- share it takes once it is below that.
+local VEST_WHOLE = 0.25
+local VEST_SHARE = 0.55
+
 local BLADE_USES = 3      -- throws in a blade before it is scrap
 local BLADES = 4          -- how many of them you can carry
 
@@ -819,7 +824,14 @@ function Player:hurt(amount, world, srcX, srcY)
     end
 
     if self.armor > 0 then
-        local soak = math.min(self.armor, amount * 0.55)
+        -- A vest with a quarter of itself left is still a vest: it takes the
+        -- whole round and nothing reaches him. Past that it is in pieces and
+        -- goes back to taking the share it always took, so it is worth
+        -- something down to the last point rather than nothing at all. A round
+        -- bigger than what is left of it still comes through, because there is
+        -- no more vest to stop it.
+        local share = self.armor > self.armorMax * VEST_WHOLE and 1 or VEST_SHARE
+        local soak = math.min(self.armor, amount * share)
         self.armor = self.armor - soak
         amount = amount - soak
     end
